@@ -1,0 +1,1016 @@
+{
+  "steps": [
+    {
+      "id": "fs-board",
+      "title": "The board",
+      "icon": "rook",
+      "intro": "A chessboard has 64 squares, light and dark. Always turn it so the bottom-right corner square is light.",
+      "defines": [],
+      "learned": "The board goes with a light square in the bottom-right corner.",
+      "tasks": [
+        {
+          "type": "show",
+          "phase": "example",
+          "prompt": "Watch where the light corner goes.",
+          "frames": [
+            {
+              "fen": "8/8/8/8/8/8/8/8 w - - 0 1",
+              "caption": "64 squares: light and dark, side by side."
+            },
+            {
+              "fen": "8/8/8/8/8/8/8/8 w - - 0 1",
+              "caption": "The bottom-right corner is always a light square.",
+              "squares": [
+                "h1"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "tap",
+          "phase": "guided",
+          "prompt": "Tap the light square in the bottom-right corner.",
+          "nudge": "It's the corner nearest your right hand.",
+          "targets": [
+            "h1"
+          ]
+        },
+        {
+          "type": "tap",
+          "phase": "solo",
+          "prompt": "The opposite corner is light too. Tap the top-left corner.",
+          "nudge": "Go all the way up and all the way left.",
+          "targets": [
+            "a8"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fs-squares",
+      "title": "Square names",
+      "icon": "rook",
+      "intro": "Columns are called files, named a to h from left to right. Rows are called ranks, numbered 1 to 8 from the bottom.",
+      "defines": [
+        "file",
+        "rank"
+      ],
+      "learned": "Every square has a name: its file letter, then its rank number, like e4.",
+      "tasks": [
+        {
+          "type": "show",
+          "phase": "example",
+          "prompt": "Watch how squares get their names.",
+          "frames": [
+            {
+              "fen": "8/8/8/8/8/8/8/8 w - - 0 1",
+              "caption": "This corner is a1: file a, rank 1.",
+              "squares": [
+                "a1"
+              ]
+            },
+            {
+              "fen": "8/8/8/8/8/8/8/8 w - - 0 1",
+              "caption": "File e goes up the board. Rank 4 goes across. Where they meet is e4.",
+              "squares": [
+                "e1",
+                "e2",
+                "e3",
+                "e4",
+                "e5",
+                "e6",
+                "e7",
+                "e8",
+                "a4",
+                "b4",
+                "c4",
+                "d4",
+                "f4",
+                "g4",
+                "h4"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "tap",
+          "phase": "guided",
+          "prompt": "Tap e4.",
+          "nudge": "Find file e, the fifth from the left. Then go up to rank 4.",
+          "targets": [
+            "e4"
+          ]
+        },
+        {
+          "type": "tap",
+          "phase": "solo",
+          "prompt": "Tap d5, then b7, then g2.",
+          "nudge": "Letter first: go across to the file. Then go up to the rank.",
+          "targets": [
+            "d5",
+            "b7",
+            "g2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fs-rook",
+      "title": "The rook",
+      "icon": "rook",
+      "intro": "The rook moves in straight lines: up, down, left or right. It can go as far as it likes.",
+      "defines": [],
+      "learned": "The rook moves in straight lines.",
+      "tasks": [
+        {
+          "type": "stars",
+          "phase": "example",
+          "prompt": "Watch the rook collect both stars.",
+          "fen": "8/8/8/8/8/8/8/R7",
+          "stars": [
+            "a6",
+            "f6"
+          ],
+          "par": 2
+        },
+        {
+          "type": "stars",
+          "phase": "guided",
+          "prompt": "Move the rook onto the star.",
+          "nudge": "Drag the rook straight up.",
+          "fen": "8/8/8/8/8/8/8/R7",
+          "stars": [
+            "a4"
+          ],
+          "par": 1
+        },
+        {
+          "type": "stars",
+          "phase": "solo",
+          "prompt": "Collect all three stars in as few moves as you can.",
+          "nudge": "Every move goes in a straight line. Plan the route first.",
+          "fen": "8/8/8/8/3R4/8/8/8",
+          "stars": [
+            "d8",
+            "h8",
+            "h2"
+          ],
+          "par": 3
+        }
+      ]
+    },
+    {
+      "id": "fs-bishop",
+      "title": "The bishop",
+      "icon": "bishop",
+      "intro": "The bishop moves diagonally, as far as it likes. It stays on the same color square all game.",
+      "defines": [],
+      "learned": "The bishop moves diagonally and never changes square color.",
+      "tasks": [
+        {
+          "type": "stars",
+          "phase": "example",
+          "prompt": "Watch the bishop slide along the diagonals.",
+          "fen": "8/8/8/8/8/8/8/2B5",
+          "stars": [
+            "e3",
+            "h6"
+          ],
+          "par": 2
+        },
+        {
+          "type": "stars",
+          "phase": "guided",
+          "prompt": "Move the bishop onto the star.",
+          "nudge": "Slide up and to the right.",
+          "fen": "8/8/8/8/8/8/8/2B5",
+          "stars": [
+            "g5"
+          ],
+          "par": 1
+        },
+        {
+          "type": "stars",
+          "phase": "solo",
+          "prompt": "Collect all three stars.",
+          "nudge": "All the stars are on light squares, like your bishop.",
+          "fen": "8/8/8/8/8/8/8/5B2",
+          "stars": [
+            "b5",
+            "e8",
+            "h5"
+          ],
+          "par": 3
+        }
+      ]
+    },
+    {
+      "id": "fs-queen",
+      "title": "The queen",
+      "icon": "queen",
+      "intro": "The queen moves like a rook and a bishop together: straight or diagonal, as far as she likes. She is your strongest piece.",
+      "defines": [],
+      "learned": "The queen moves in straight lines and diagonals.",
+      "tasks": [
+        {
+          "type": "stars",
+          "phase": "example",
+          "prompt": "Watch the queen go straight, then diagonal.",
+          "fen": "8/8/8/8/8/8/8/3Q4",
+          "stars": [
+            "d5",
+            "h1"
+          ],
+          "par": 2
+        },
+        {
+          "type": "stars",
+          "phase": "guided",
+          "prompt": "Move the queen onto the star.",
+          "nudge": "This one is on a diagonal.",
+          "fen": "8/8/8/8/8/8/8/3Q4",
+          "stars": [
+            "h5"
+          ],
+          "par": 1
+        },
+        {
+          "type": "stars",
+          "phase": "solo",
+          "prompt": "Collect all three stars.",
+          "nudge": "Mix straight moves and diagonal moves.",
+          "fen": "8/8/8/8/8/8/8/Q7",
+          "stars": [
+            "a8",
+            "h1",
+            "e4"
+          ],
+          "par": 3
+        }
+      ]
+    },
+    {
+      "id": "fs-knight",
+      "title": "The knight",
+      "icon": "knight",
+      "intro": "The knight jumps in an L shape: two squares one way, then one square to the side. It is the only piece that can jump over others.",
+      "defines": [],
+      "learned": "The knight jumps in an L shape.",
+      "tasks": [
+        {
+          "type": "stars",
+          "phase": "example",
+          "prompt": "Watch the knight jump.",
+          "fen": "8/8/8/8/8/8/8/1N6",
+          "stars": [
+            "c3",
+            "d5"
+          ],
+          "par": 2
+        },
+        {
+          "type": "stars",
+          "phase": "guided",
+          "prompt": "Jump the knight onto the star.",
+          "nudge": "Two squares up, then one to the left.",
+          "fen": "8/8/8/8/8/8/8/6N1",
+          "stars": [
+            "f3"
+          ],
+          "par": 1
+        },
+        {
+          "type": "stars",
+          "phase": "solo",
+          "prompt": "Collect all three stars.",
+          "nudge": "Each star is one L-jump from the last.",
+          "fen": "8/8/8/8/8/8/8/N7",
+          "stars": [
+            "b3",
+            "d4",
+            "f5"
+          ],
+          "par": 3
+        }
+      ]
+    },
+    {
+      "id": "fs-king",
+      "title": "The king",
+      "icon": "king",
+      "intro": "The king moves one square in any direction. It is slow, but it is the piece you must keep safe.",
+      "defines": [],
+      "learned": "The king moves one square in any direction.",
+      "tasks": [
+        {
+          "type": "stars",
+          "phase": "example",
+          "prompt": "Watch the king step.",
+          "fen": "8/8/8/8/8/8/8/4K3",
+          "stars": [
+            "e2",
+            "f3"
+          ],
+          "par": 2
+        },
+        {
+          "type": "stars",
+          "phase": "guided",
+          "prompt": "Step the king onto the star.",
+          "nudge": "Just one square up.",
+          "fen": "8/8/8/8/4K3/8/8/8",
+          "stars": [
+            "e5"
+          ],
+          "par": 1
+        },
+        {
+          "type": "stars",
+          "phase": "solo",
+          "prompt": "Collect all three stars.",
+          "nudge": "Diagonal steps count too.",
+          "fen": "8/8/8/8/8/8/8/K7",
+          "stars": [
+            "b2",
+            "c3",
+            "d3"
+          ],
+          "par": 3
+        }
+      ]
+    },
+    {
+      "id": "fs-pawn",
+      "title": "The pawn",
+      "icon": "pawn",
+      "intro": "A pawn moves straight forward, one square at a time. On its very first move it may go two squares. It never moves backward.",
+      "defines": [],
+      "learned": "Pawns step forward, and may jump two squares on their first move.",
+      "tasks": [
+        {
+          "type": "stars",
+          "phase": "example",
+          "prompt": "Watch: two squares first, then one.",
+          "fen": "8/8/8/8/8/8/4P3/8",
+          "stars": [
+            "e4",
+            "e5"
+          ],
+          "par": 2
+        },
+        {
+          "type": "stars",
+          "phase": "guided",
+          "prompt": "Move the pawn onto the star.",
+          "nudge": "One square forward.",
+          "fen": "8/8/8/8/8/3P4/8/8",
+          "stars": [
+            "d4"
+          ],
+          "par": 1
+        },
+        {
+          "type": "stars",
+          "phase": "solo",
+          "prompt": "Reach the star in one move.",
+          "nudge": "This pawn hasn't moved yet.",
+          "fen": "8/8/8/8/8/8/2P5/8",
+          "stars": [
+            "c4"
+          ],
+          "par": 1
+        }
+      ]
+    },
+    {
+      "id": "fs-capture",
+      "title": "Capturing",
+      "icon": "rook",
+      "intro": "To capture is to take an enemy piece off the board by moving onto its square. Every piece except the pawn captures the same way it moves.",
+      "defines": [
+        "capture"
+      ],
+      "learned": "Pieces capture by landing on an enemy piece.",
+      "tasks": [
+        {
+          "type": "collect",
+          "phase": "example",
+          "prompt": "Watch the rook capture both pawns.",
+          "fen": "8/8/8/p3p3/8/8/8/R7",
+          "par": 2
+        },
+        {
+          "type": "collect",
+          "phase": "guided",
+          "prompt": "Capture the pawn with your knight.",
+          "nudge": "One L-jump.",
+          "fen": "8/8/8/8/8/5p2/8/6N1",
+          "par": 1
+        },
+        {
+          "type": "collect",
+          "phase": "solo",
+          "prompt": "Capture all three pawns with the queen.",
+          "nudge": "Up first, then think diagonally.",
+          "fen": "8/1p4p1/8/8/3p4/8/8/3Q4",
+          "par": 3
+        }
+      ]
+    },
+    {
+      "id": "fs-pawn-capture",
+      "title": "How pawns capture",
+      "icon": "pawn",
+      "intro": "Pawns are the exception: they capture one square diagonally forward, never straight ahead.",
+      "defines": [],
+      "learned": "Pawns capture diagonally forward.",
+      "tasks": [
+        {
+          "type": "collect",
+          "phase": "example",
+          "prompt": "Watch the pawn capture diagonally.",
+          "fen": "8/8/8/3p4/4P3/8/8/8",
+          "par": 1
+        },
+        {
+          "type": "collect",
+          "phase": "guided",
+          "prompt": "Capture the black pawn.",
+          "nudge": "Go diagonally forward.",
+          "fen": "8/8/8/4p3/3P4/8/8/8",
+          "par": 1
+        },
+        {
+          "type": "collect",
+          "phase": "solo",
+          "prompt": "Capture both black pawns.",
+          "nudge": "One diagonal capture sets up the next.",
+          "fen": "8/8/8/8/1p6/2p5/1P6/8",
+          "par": 2
+        }
+      ]
+    },
+    {
+      "id": "fs-protection",
+      "title": "Protection",
+      "icon": "pawn",
+      "intro": "A piece is protected when one of your own pieces could capture back on its square. If the enemy takes it, you take back.",
+      "defines": [
+        "protected"
+      ],
+      "learned": "A piece is protected when another of your pieces could take back on its square.",
+      "tasks": [
+        {
+          "type": "show",
+          "phase": "example",
+          "prompt": "Watch how protection works.",
+          "frames": [
+            {
+              "fen": "4k3/8/8/8/3N4/4P3/8/4K3 w - - 0 1",
+              "caption": "Your knight is on d4.",
+              "squares": [
+                "d4"
+              ]
+            },
+            {
+              "fen": "4k3/8/8/8/3N4/4P3/8/4K3 w - - 0 1",
+              "caption": "Your pawn could capture on d4. So the knight is protected.",
+              "arrows": [
+                "e3d4"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "pick",
+          "phase": "guided",
+          "prompt": "Tap the white piece that is protected.",
+          "nudge": "Pawns protect diagonally forward.",
+          "fen": "7k/8/8/6B1/8/2N5/1P6/7K w - - 0 1",
+          "rule": "defended",
+          "why": "Nothing of yours could capture back on that square, so it isn't protected."
+        },
+        {
+          "type": "pick",
+          "phase": "solo",
+          "prompt": "Tap every white piece that is protected. Ignore the kings.",
+          "nudge": "Rooks on the same row protect each other.",
+          "fen": "7k/8/8/1B6/8/5N2/8/R2R2K1 w - - 0 1",
+          "rule": "defended",
+          "why": "Nothing of yours could capture back on that square, so it isn't protected."
+        }
+      ]
+    },
+    {
+      "id": "fs-check",
+      "title": "Check",
+      "icon": "king",
+      "intro": "Check means the king is under attack: an enemy piece could capture it next move. You never actually capture a king.",
+      "defines": [
+        "check"
+      ],
+      "learned": "Check means a king is under attack.",
+      "tasks": [
+        {
+          "type": "show",
+          "phase": "example",
+          "prompt": "Watch for the attack on the king.",
+          "frames": [
+            {
+              "fen": "4k3/8/8/1B6/8/8/8/4K3 b - - 0 1",
+              "caption": "The bishop's diagonal reaches the black king.",
+              "arrows": [
+                "b5e8"
+              ]
+            },
+            {
+              "fen": "4k3/8/8/1B6/8/8/8/4K3 b - - 0 1",
+              "caption": "So the black king is in check.",
+              "squares": [
+                "e8"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "phase": "guided",
+          "prompt": "Is the black king in check?",
+          "nudge": "Follow the rook's straight line.",
+          "fen": "4k3/8/8/8/8/8/8/4R1K1 b - - 0 1",
+          "options": [
+            "Yes",
+            "No"
+          ],
+          "answer": 0,
+          "rule": "inCheck",
+          "why": "The rook on e1 looks straight up the e-file to the king.",
+          "keySquares": [
+            "e1",
+            "e8"
+          ]
+        },
+        {
+          "type": "choice",
+          "phase": "solo",
+          "prompt": "Is the black king in check?",
+          "nudge": "Check every white piece's lines.",
+          "fen": "4k3/8/8/8/3B4/8/8/R5K1 b - - 0 1",
+          "options": [
+            "Yes",
+            "No"
+          ],
+          "answer": 1,
+          "rule": "inCheck",
+          "why": "Neither the bishop's diagonals nor the rook's lines reach e8.",
+          "keySquares": [
+            "d4",
+            "a1"
+          ]
+        },
+        {
+          "type": "choice",
+          "phase": "solo",
+          "prompt": "And this one?",
+          "nudge": "Knights attack in an L.",
+          "fen": "4k3/8/5N2/8/8/8/8/4K3 b - - 0 1",
+          "options": [
+            "Yes",
+            "No"
+          ],
+          "answer": 0,
+          "rule": "inCheck",
+          "why": "The knight on f6 is one L-jump from e8.",
+          "keySquares": [
+            "f6",
+            "e8"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fs-escape",
+      "title": "Getting out of check",
+      "icon": "king",
+      "intro": "When you are in check, you must deal with it right away. You can move the king, block the attack, or capture the attacker.",
+      "defines": [],
+      "learned": "Out of check three ways: move, block, capture.",
+      "tasks": [
+        {
+          "type": "move",
+          "phase": "example",
+          "prompt": "Watch: the king steps out of the rook's line.",
+          "fen": "4r1k1/8/8/8/8/8/8/4K3 w - - 0 1",
+          "answer": "Kd2",
+          "accept": "kingMove",
+          "why": "The king is no longer on the e-file."
+        },
+        {
+          "type": "move",
+          "phase": "guided",
+          "prompt": "You're in check. Move your king out of the line.",
+          "nudge": "Any square off the e-file.",
+          "fen": "4r1k1/8/8/8/8/8/8/4K3 w - - 0 1",
+          "answer": "Kf2",
+          "accept": "kingMove",
+          "why": "That square is still on the e-file, where the rook attacks."
+        },
+        {
+          "type": "move",
+          "phase": "solo",
+          "prompt": "Your king can't move. Block the check.",
+          "nudge": "Put a piece between the rook and your king.",
+          "fen": "4r1k1/8/8/8/8/3B4/3P1P2/3QKB2 w - - 0 1",
+          "answer": "Qe2",
+          "accept": "block",
+          "why": "That move doesn't stand between the rook and your king."
+        },
+        {
+          "type": "move",
+          "phase": "solo",
+          "prompt": "Get out of check by capturing the attacker.",
+          "nudge": "Which pieces can reach d3?",
+          "fen": "6k1/8/8/8/8/3n4/2PPP3/3QKB2 w - - 0 1",
+          "answer": "cxd3",
+          "accept": "captureChecker",
+          "why": "The knight on d3 is still there, still giving check."
+        }
+      ]
+    },
+    {
+      "id": "fs-mate-or-stalemate",
+      "title": "Checkmate or stalemate",
+      "icon": "king",
+      "intro": "Checkmate is check with no way out: that player loses. Stalemate is when a player is not in check but has no legal move: the game is a draw, which means nobody wins.",
+      "defines": [
+        "checkmate",
+        "stalemate",
+        "draw"
+      ],
+      "learned": "Checkmate wins the game. Stalemate is only a draw.",
+      "tasks": [
+        {
+          "type": "show",
+          "phase": "example",
+          "prompt": "Spot the difference.",
+          "frames": [
+            {
+              "fen": "k7/1Q6/1K6/8/8/8/8/8 b - - 0 1",
+              "caption": "Checkmate: the queen gives check, and your king protects her. Black can't escape.",
+              "arrows": [
+                "b7a8"
+              ]
+            },
+            {
+              "fen": "k7/8/1Q6/8/8/8/8/2K5 b - - 0 1",
+              "caption": "Stalemate: no check, but every black move is blocked. A draw.",
+              "squares": [
+                "a7",
+                "b7",
+                "b8"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "phase": "guided",
+          "prompt": "Which board is checkmate?",
+          "nudge": "Look for the board where the king is attacked.",
+          "fens": [
+            "k7/1Q6/1K6/8/8/8/8/8 b - - 0 1",
+            "k7/8/1Q6/8/8/8/8/2K5 b - - 0 1"
+          ],
+          "options": [
+            "Left",
+            "Right"
+          ],
+          "answer": 0,
+          "rule": "compareMate",
+          "why": "On the right the king isn't attacked at all, so it's stalemate."
+        },
+        {
+          "type": "choice",
+          "phase": "solo",
+          "prompt": "Black to move. What is this?",
+          "nudge": "First ask: is the king in check?",
+          "fen": "7k/5Q2/6K1/8/8/8/8/8 b - - 0 1",
+          "options": [
+            "Checkmate",
+            "Stalemate"
+          ],
+          "answer": 1,
+          "rule": "mateOrStale",
+          "why": "The black king is not in check, and it has no legal move.",
+          "keySquares": [
+            "h8",
+            "g8",
+            "g7",
+            "h7"
+          ]
+        },
+        {
+          "type": "choice",
+          "phase": "solo",
+          "prompt": "Black to move. What is this?",
+          "nudge": "Is the king attacked, and can it get away?",
+          "fen": "R5k1/5ppp/8/8/8/8/8/6K1 b - - 0 1",
+          "options": [
+            "Checkmate",
+            "Stalemate"
+          ],
+          "answer": 0,
+          "rule": "mateOrStale",
+          "why": "The rook gives check along the back row, and the king's own pawns block every escape.",
+          "keySquares": [
+            "a8",
+            "g8"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fs-mate-in-1",
+      "title": "Your first checkmate",
+      "icon": "queen",
+      "intro": "With a queen and a king you can checkmate. Put the queen right next to the enemy king, where your own king protects her.",
+      "defines": [],
+      "learned": "Queen next to the king, protected by your king: checkmate.",
+      "unlocks": "puzzles",
+      "tasks": [
+        {
+          "type": "move",
+          "phase": "example",
+          "prompt": "Watch the queen deliver checkmate.",
+          "fen": "7k/Q7/6K1/8/8/8/8/8 w - - 0 1",
+          "answer": "Qg7#",
+          "accept": "mate",
+          "why": "The queen on g7 is protected by your king, and every escape is covered."
+        },
+        {
+          "type": "move",
+          "phase": "guided",
+          "prompt": "Checkmate in one move.",
+          "nudge": "Check along the top row. Your king already guards the squares in front.",
+          "fen": "k7/8/1K6/8/8/8/7Q/8 w - - 0 1",
+          "answer": "Qh8#",
+          "accept": "mate",
+          "why": "That's not checkmate: the black king can still move or take the queen."
+        },
+        {
+          "type": "move",
+          "phase": "solo",
+          "prompt": "Checkmate in one move.",
+          "nudge": "The king is on the edge. Your king guards the row in front of it.",
+          "fen": "4k3/8/4K3/8/8/8/8/7Q w - - 0 1",
+          "answer": "Qh8#",
+          "accept": "mate",
+          "why": "That's not checkmate: the black king still has a safe square."
+        },
+        {
+          "type": "move",
+          "phase": "solo",
+          "prompt": "One more: checkmate in one.",
+          "nudge": "Check along the top row.",
+          "fen": "3k4/8/3K4/8/8/8/8/6Q1 w - - 0 1",
+          "answer": "Qg8#",
+          "accept": "mate",
+          "why": "That's not checkmate: the black king still has a safe square."
+        }
+      ]
+    },
+    {
+      "id": "fs-castling",
+      "title": "Castling",
+      "icon": "rook",
+      "intro": "Castling is a special move that tucks your king into safety. The king moves two squares toward a rook, and the rook jumps to the other side of the king.",
+      "defines": [
+        "castling"
+      ],
+      "learned": "Castle by moving the king two squares toward the rook. Not allowed in check or through an attacked square.",
+      "tasks": [
+        {
+          "type": "move",
+          "phase": "example",
+          "prompt": "Watch White castle.",
+          "fen": "4k3/8/8/8/8/8/5PPP/4K2R w K - 0 1",
+          "answer": "O-O",
+          "accept": "castle",
+          "why": "The king went to g1 and the rook to f1."
+        },
+        {
+          "type": "move",
+          "phase": "guided",
+          "prompt": "Castle: move your king two squares toward the rook.",
+          "nudge": "Drag the king from e1 to g1.",
+          "fen": "4k3/8/8/8/8/8/5PPP/4K2R w K - 0 1",
+          "answer": "O-O",
+          "accept": "castle",
+          "why": "Castling moves the king two squares, from e1 to g1."
+        },
+        {
+          "type": "choice",
+          "phase": "solo",
+          "prompt": "One rule: the king may not pass through an attacked square. Can White castle here?",
+          "nudge": "Which square does the king pass through?",
+          "fen": "4kr2/8/8/8/8/8/6PP/4K2R w K - 0 1",
+          "options": [
+            "Yes",
+            "No"
+          ],
+          "answer": 1,
+          "rule": "canCastleKingside",
+          "why": "The king would pass through f1, which the black rook attacks.",
+          "keySquares": [
+            "f8",
+            "f1"
+          ]
+        },
+        {
+          "type": "choice",
+          "phase": "solo",
+          "prompt": "Can White castle here?",
+          "nudge": "Check the squares between the king and the rook.",
+          "fen": "r3k3/8/8/8/8/8/5PPP/4K2R w Kq - 0 1",
+          "options": [
+            "Yes",
+            "No"
+          ],
+          "answer": 0,
+          "rule": "canCastleKingside",
+          "why": "Nothing stands between them and nothing attacks f1 or g1."
+        }
+      ]
+    },
+    {
+      "id": "fs-en-passant",
+      "title": "En passant",
+      "icon": "pawn",
+      "intro": "En passant is a special pawn capture. If an enemy pawn jumps two squares and lands right next to your pawn, you may capture it as if it had moved only one. You must do it on your very next move.",
+      "defines": [
+        "en passant"
+      ],
+      "learned": "En passant: capture a pawn that just jumped past yours, right away.",
+      "tasks": [
+        {
+          "type": "show",
+          "phase": "example",
+          "prompt": "Watch closely.",
+          "frames": [
+            {
+              "fen": "4k3/3p4/8/4P3/8/8/8/4K3 b - - 0 1",
+              "caption": "Black's pawn is about to jump two squares.",
+              "arrows": [
+                "d7d5"
+              ]
+            },
+            {
+              "fen": "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 2",
+              "caption": "It landed right next to your pawn.",
+              "squares": [
+                "d5",
+                "e5"
+              ]
+            },
+            {
+              "fen": "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 2",
+              "caption": "Your pawn captures it as if it had moved one square, landing on d6.",
+              "arrows": [
+                "e5d6"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "move",
+          "phase": "guided",
+          "prompt": "Capture en passant.",
+          "nudge": "Move your pawn diagonally behind the black pawn.",
+          "fen": "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 2",
+          "answer": "exd6",
+          "accept": "enPassant",
+          "why": "En passant lands diagonally behind the pawn that just jumped."
+        },
+        {
+          "type": "move",
+          "phase": "solo",
+          "prompt": "You play Black this time. Capture en passant.",
+          "nudge": "White's pawn just jumped past yours.",
+          "fen": "4k3/8/8/8/1pP5/8/8/4K3 b - c3 0 1",
+          "answer": "bxc3",
+          "accept": "enPassant",
+          "why": "En passant lands diagonally behind the pawn that just jumped."
+        }
+      ]
+    },
+    {
+      "id": "fs-promotion",
+      "title": "Promotion",
+      "icon": "queen",
+      "intro": "A pawn that reaches the far end of the board must turn into a queen, rook, bishop or knight. This is called promotion, and almost always you pick the queen.",
+      "defines": [
+        "promotion"
+      ],
+      "learned": "A pawn that reaches the end becomes a new piece, usually a queen.",
+      "tasks": [
+        {
+          "type": "move",
+          "phase": "example",
+          "prompt": "Watch the pawn become a queen.",
+          "fen": "4k3/1P6/8/8/8/8/8/4K3 w - - 0 1",
+          "answer": "b8=Q+",
+          "accept": "promote",
+          "why": "The new queen even gives check."
+        },
+        {
+          "type": "move",
+          "phase": "guided",
+          "prompt": "Push the pawn to the end and choose a queen.",
+          "nudge": "One square forward.",
+          "fen": "8/2P1k3/8/8/8/8/8/4K3 w - - 0 1",
+          "answer": "c8=Q",
+          "accept": "promote",
+          "why": "Only a pawn on the last rank can promote."
+        },
+        {
+          "type": "move",
+          "phase": "solo",
+          "prompt": "Find the best promotion.",
+          "nudge": "Pawns can promote while capturing.",
+          "fen": "3r4/4P2k/8/8/8/8/8/4K3 w - - 0 1",
+          "answer": "exd8=Q+",
+          "accept": "best",
+          "why": "Capturing the rook while promoting wins the most."
+        }
+      ]
+    },
+    {
+      "id": "fs-draws",
+      "title": "Draws",
+      "icon": "king",
+      "intro": "Stalemate is not the only draw. If neither side has enough pieces left to checkmate, the game is also a draw.",
+      "defines": [],
+      "learned": "Too few pieces to checkmate means a draw. So does the same position three times, or 50 moves each with no capture or pawn move.",
+      "tasks": [
+        {
+          "type": "show",
+          "phase": "example",
+          "prompt": "Why is this a draw?",
+          "frames": [
+            {
+              "fen": "4k3/8/8/8/8/8/8/3BK3 w - - 0 1",
+              "caption": "A king and a bishop can never checkmate a king. Draw.",
+              "squares": [
+                "d1"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "phase": "guided",
+          "prompt": "White has a king and a knight. Can White still checkmate?",
+          "nudge": "A single knight is like a single bishop here.",
+          "fen": "4k3/8/8/8/8/8/8/1N2K3 w - - 0 1",
+          "options": [
+            "Yes",
+            "No"
+          ],
+          "answer": 1,
+          "rule": "canMate",
+          "why": "A lone knight can't force checkmate, so the game is a draw."
+        },
+        {
+          "type": "choice",
+          "phase": "solo",
+          "prompt": "White has a king and a rook. Can White still checkmate?",
+          "nudge": "A rook can attack a whole row.",
+          "fen": "4k3/8/8/8/8/8/8/R3K3 w - - 0 1",
+          "options": [
+            "Yes",
+            "No"
+          ],
+          "answer": 0,
+          "rule": "canMate",
+          "why": "King and rook against a king is enough to checkmate."
+        }
+      ]
+    },
+    {
+      "id": "fs-first-game",
+      "title": "Your first game",
+      "icon": "king",
+      "intro": "Time for a real game. A coach watches your pieces and warns you before you give one away. Try to checkmate the bot.",
+      "defines": [],
+      "learned": "You played a whole game of chess.",
+      "unlocks": "play",
+      "tasks": [
+        {
+          "type": "game",
+          "phase": "solo",
+          "prompt": "Play a full game. You have White."
+        }
+      ]
+    }
+  ]
+}

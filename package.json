@@ -1,0 +1,40 @@
+{
+  "name": "gambit",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "postinstall": "node scripts/copy-stockfish.mjs",
+    "puzzles": "node scripts/build-puzzles.ts && node scripts/build-demos.ts",
+    "content:check": "node scripts/validate-content.ts",
+    "openings": "node scripts/build-openings.ts",
+    "test": "vitest run",
+    "lint": "oxlint --react-plugin -D correctness -A no-unused-vars src scripts tests",
+    "puzzles:check": "node scripts/check-puzzles.ts"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "chessground": "^9.2.1",
+    "framer-motion": "^14.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "stockfish": "^18.0.8",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "jsdom": "^30.1.3",
+    "oxlint": "^1.88.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "level": 2,
+  "title": "Endgames and habits",
+  "range": "900-1200",
+  "unlockRating": 900,
+  "lessons": [
+    {
+      "id": "l2-kq-k",
+      "title": "Queen checkmate",
+      "summary": "King and queen against a lone king.",
+      "explain": "Put your queen a knight's move away from the enemy king to shrink its box, then walk your own king up to help. Never leave the lone king without a move unless it is checkmate: that is stalemate, a draw.",
+      "steps": [
+        {
+          "type": "move",
+          "fen": "7k/8/6K1/8/8/8/8/5Q2 w - - 0 1",
+          "text": "The finish. Mate in 1, and avoid Qf7, which is stalemate.",
+          "line": [
+            "Qf8#"
+          ],
+          "anyMate": true,
+          "explain": "Edge plus king support is mate."
+        },
+        {
+          "type": "play",
+          "fen": "8/8/8/4k3/8/8/8/3QK3 w - - 0 1",
+          "text": "Checkmate Stockfish with king and queen. Shrink the box, bring your king, watch for stalemate.",
+          "goal": "mate",
+          "maxMoves": 25,
+          "explain": "You can convert any extra queen now."
+        }
+      ]
+    },
+    {
+      "id": "l2-kr-k",
+      "title": "Rook checkmate",
+      "summary": "King and rook against a lone king.",
+      "explain": "Use the rook to cut the king off along a rank or file. Bring your king up until the two kings face each other, then check from the side to push the enemy king back a row. Repeat until it reaches the edge.",
+      "steps": [
+        {
+          "type": "move",
+          "fen": "4k3/8/4K3/8/8/8/8/R7 w - - 0 1",
+          "text": "The kings face each other. Mate in 1.",
+          "line": [
+            "Ra8#"
+          ],
+          "anyMate": true,
+          "explain": "Your king covers the escape squares, the rook checks along the edge."
+        },
+        {
+          "type": "play",
+          "fen": "8/8/8/4k3/8/8/8/R3K3 w - - 0 1",
+          "text": "Checkmate Stockfish with king and rook. Cut off, bring the king, check when the kings face each other.",
+          "goal": "mate",
+          "maxMoves": 35,
+          "explain": "The most important technique in endgames."
+        }
+      ]
+    },
+    {
+      "id": "l2-opposition",
+      "title": "The opposition",
+      "summary": "Kings face off: who must give way?",
+      "explain": "When two kings face each other with one square between them, the side that has to move must give way. Having the other side to move is called having the opposition. A spare pawn move hands the move to your opponent and wins the opposition.",
+      "steps": [
+        {
+          "type": "move",
+          "fen": "8/8/4k3/8/4K3/8/4P3/8 w - - 0 1",
+          "text": "The kings face each other and it's your move. Use the pawn to pass the move to Black.",
+          "line": [
+            "e3"
+          ],
+          "explain": "Now Black must step aside, and your king walks forward."
+        }
+      ]
+    },
+    {
+      "id": "l2-kp-k",
+      "title": "King and pawn against king",
+      "summary": "Escort the pawn home.",
+      "explain": "Your king goes in front of the pawn, not behind it. With your king on the sixth rank in front of the pawn you win, except with an a- or h-pawn, which is often only a draw. Push the pawn only when your king already controls the squares ahead of it.",
+      "steps": [
+        {
+          "type": "play",
+          "fen": "3k4/8/3K4/3P4/8/8/8/8 w - - 0 1",
+          "text": "Promote the pawn against Stockfish. Use the opposition, and don't push too early or it's stalemate.",
+          "goal": "promote",
+          "maxMoves": 12,
+          "explain": "King first, pawn second."
+        }
+      ]
+    },
+    {
+      "id": "l2-deflection",
+      "title": "Deflection",
+      "summary": "Drag a defender away from its job.",
+      "explain": "A defender that guards something important can be lured or forced away. Attack it, offer it a capture, or check so it has to move. When it leaves, the thing it guarded falls.",
+      "theme": "deflection",
+      "practice": {
+        "theme": "deflection",
+        "label": "Deflection",
+        "count": 5
+      }
+    },
+    {
+      "id": "l2-defender",
+      "title": "Remove the defender",
+      "summary": "Take the guard, then take the prize.",
+      "explain": "If one piece defends a key square or piece, capture that defender first. Even trading a better piece for it can be worth it. The second move then wins what was left unguarded.",
+      "theme": "capturingDefender",
+      "practice": {
+        "theme": "capturingDefender",
+        "label": "Remove the defender",
+        "count": 5
+      }
+    },
+    {
+      "id": "l2-attraction",
+      "title": "Attraction",
+      "summary": "Lure a piece onto a bad square.",
+      "explain": "Attraction forces an enemy piece, often the king, onto a square where it can be hit. A sacrifice usually does the luring. The follow-up is a fork, a pin or a mate on that exact square.",
+      "theme": "attraction",
+      "practice": {
+        "theme": "attraction",
+        "label": "Attraction",
+        "count": 5
+      }
+    },
+    {
+      "id": "l2-mate-in-2",
+      "title": "Mate in 2",
+      "summary": "Force it, then finish it.",
+      "explain": "A mate in two starts with a forcing move: a check, a capture, or a calm move that threatens mate and leaves only one defense. Look at every check first. Then ask what your opponent can do in reply, and whether each reply allows mate.",
+      "theme": "mateIn2",
+      "practice": {
+        "theme": "mateIn2",
+        "label": "Mate in 2",
+        "count": 5
+      }
+    },
+    {
+      "id": "l2-blunder-check",
+      "title": "Blunder check",
+      "summary": "What does their move threaten?",
+      "explain": "Before every move, ask what your opponent's last move attacks and what it threatens next. If there is a threat, deal with it first. Then check that your planned move leaves nothing hanging. In these positions, find the move that stops the threat.",
+      "theme": "defensiveMove",
+      "practice": {
+        "theme": "defensiveMove",
+        "label": "Defensive moves",
+        "count": 5
+      }
+    }
+  ]
+}

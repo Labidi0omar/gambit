@@ -1,0 +1,131 @@
+@import 'tailwindcss';
+
+/*
+  Gambit. One ground (warm charcoal), one ink (ivory), one accent (brass, actions only).
+  Surfaces separate by tone steps, never lines, shadows or gradients. Square corners, like the board.
+*/
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+
+  --color-bg: #121110;
+  --color-surface: #1b1a18;
+  --color-surface-2: #242220;
+  --color-surface-3: #2e2c29;
+  --color-line: transparent;
+
+  --color-ink: #efe8d8;
+  --color-ink-2: #a9a18d;
+  --color-accent: #c99a3e;
+  --color-accent-2: #b3872f;
+  --color-up: #86b98a;
+  --color-down: #d9675a;
+
+  /* Map the old neutral scale onto ink so nothing reads cold or washed out. */
+  --color-zinc-100: #efe8d8;
+  --color-zinc-200: #e4dcc9;
+  --color-zinc-300: #cfc6b1;
+  --color-zinc-400: #a9a18d;
+  --color-zinc-500: #8a8371;
+  --color-zinc-600: #625c4f;
+  --color-zinc-700: #3e3b33;
+  --color-zinc-800: #282624;
+  --color-zinc-900: #1b1a18;
+  --color-white: #efe8d8;
+  --color-black: #14110b;
+
+  /* Square, like the board. */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 3px;
+  --radius-2xl: 3px;
+  --radius-3xl: 3px;
+}
+
+html { scroll-behavior: smooth; }
+html, body, #root { min-height: 100%; }
+body {
+  @apply bg-bg font-sans antialiased;
+  color: var(--color-ink);
+  font-size: 16px;
+}
+
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+::selection { background: var(--color-accent); color: #14110b; }
+
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+
+@layer components {
+.font-display { font-family: var(--font-display); font-optical-sizing: auto; letter-spacing: -0.02em; }
+.num { font-family: var(--font-display); font-variant-numeric: lining-nums tabular-nums; letter-spacing: -0.02em; }
+.display-xl { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.035em; line-height: 0.95; font-size: clamp(3rem, 7vw, 6.5rem); }
+.display-m { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.025em; line-height: 1.02; font-size: clamp(1.75rem, 3vw, 2.5rem); }
+
+/* Secondary note, sentence case. (Old uppercase labels map here.) */
+.label { @apply text-sm font-medium; color: var(--color-ink-2); }
+.chip { @apply inline-flex items-center gap-1 px-2 py-0.5 text-sm font-medium; background: var(--color-surface-2); color: var(--color-ink-2); border-radius: 2px; }
+
+/* Surfaces: a tone step from the ground. No border, no shadow. */
+.glass, .card { background: var(--color-surface); border-radius: 3px; }
+.card-hero { position: relative; overflow: hidden; background: var(--color-surface-2); border-radius: 3px; }
+
+/* Buttons: flat, square, one fill. */
+.btn-primary, .btn-accent {
+  @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 text-[15px] font-bold transition duration-200 disabled:opacity-40;
+  background: var(--color-accent);
+  color: #14110b;
+  border-radius: 2px;
+}
+.btn-primary:hover, .btn-accent:hover { background: #d6a84d; }
+.btn-primary:active, .btn-accent:active { transform: translateY(1px); }
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 text-[15px] font-semibold transition duration-200 disabled:opacity-40;
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+  border-radius: 2px;
+}
+.btn-ghost:hover { background: var(--color-surface-3); }
+.btn-ghost:active { transform: translateY(1px); }
+.link { @apply font-semibold underline decoration-2 underline-offset-4 transition-colors; text-decoration-color: rgb(201 154 62 / 0.6); }
+.link:hover { text-decoration-color: var(--color-accent); }
+}
+
+/* ---------- classic board in a wooden frame ---------- */
+.board-wrap { width: 100%; aspect-ratio: 1 / 1; border: 9px solid #3b2718; border-radius: 3px; background: #3b2718; box-sizing: border-box; }
+.board-wrap .cg-wrap { width: 100%; height: 100%; }
+
+input[type='range'] { accent-color: var(--color-accent); }
+
+cg-board square.flash-good { background: rgb(134 185 138 / 0.7); animation: flash 0.6s ease-out; }
+cg-board square.flash-bad { background: rgb(217 103 90 / 0.75); animation: flash 0.6s ease-out; }
+@keyframes flash { from { opacity: 1; } to { opacity: 0.35; } }
+cg-board square.found { background: rgb(134 185 138 / 0.55); }
+cg-board square.mark { background: rgb(201 154 62 / 0.55); }
+
+/* piece artwork outside a board (chessground's cburnett set) */
+.piece-art { position: relative; }
+.piece-art piece { position: absolute; inset: 0; width: 100% !important; height: 100% !important; background-size: contain; background-repeat: no-repeat; background-position: center; transform: none !important; }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Touch screens: every control at least 44px tall. */
+@media (pointer: coarse) {
+  button, select, summary, [role='button'] { min-height: 44px; }
+  .link { display: inline-flex; align-items: center; }
+  input[type='checkbox'], input[type='radio'] { width: 24px; height: 24px; }
+  input[type='range'] { min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* First Steps: stars, gentle "not quite" marks, hint highlights */
+cg-board square.star { background: radial-gradient(circle, rgb(201 154 62 / 0.95) 0 22%, rgb(201 154 62 / 0.25) 23% 40%, transparent 41%); }
+cg-board square.soft { background: rgb(201 154 62 / 0.35); }
+cg-board square.hint { background: rgb(134 185 138 / 0.45); box-shadow: inset 0 0 0 3px rgb(134 185 138 / 0.9); }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 0 0 rgb(201 154 62 / 0.55); } 50% { box-shadow: 0 0 0 14px rgb(201 154 62 / 0); } }
+.node-glow { animation: glow 2s ease-in-out infinite; }

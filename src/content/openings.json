@@ -1,0 +1,481 @@
+{
+ "white": [
+  {
+   "id": "italian",
+   "name": "Italian Game",
+   "advanced": false,
+   "lines": [
+    {
+     "eco": "C50",
+     "name": "Italian Game: Giuoco Pianissimo",
+     "pgn": "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. Nc3 Nf6 5. O-O O-O 6. d3",
+     "san": [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nc6",
+      "Bc4",
+      "Bc5",
+      "Nc3",
+      "Nf6",
+      "O-O",
+      "O-O",
+      "d3"
+     ]
+    },
+    {
+     "eco": "C50",
+     "name": "Italian Game: Giuoco Pianissimo",
+     "pgn": "1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. O-O Bc5 5. Nc3 d6 6. d3",
+     "san": [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nc6",
+      "Bc4",
+      "Nf6",
+      "O-O",
+      "Bc5",
+      "Nc3",
+      "d6",
+      "d3"
+     ]
+    },
+    {
+     "eco": "C42",
+     "name": "Petrov's Defense",
+     "pgn": "1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4",
+     "san": [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nf6",
+      "Nxe5",
+      "d6",
+      "Nf3",
+      "Nxe4"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ruy-lopez",
+   "name": "Ruy Lopez",
+   "advanced": true,
+   "lines": [
+    {
+     "eco": "C90",
+     "name": "Ruy Lopez: Closed",
+     "pgn": "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O",
+     "san": [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nc6",
+      "Bb5",
+      "a6",
+      "Ba4",
+      "Nf6",
+      "O-O",
+      "Be7",
+      "Re1",
+      "b5",
+      "Bb3",
+      "d6",
+      "c3",
+      "O-O"
+     ]
+    },
+    {
+     "eco": "C65",
+     "name": "Ruy Lopez: Berlin Defense",
+     "pgn": "1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. O-O",
+     "san": [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nc6",
+      "Bb5",
+      "Nf6",
+      "O-O"
+     ]
+    },
+    {
+     "eco": "C42",
+     "name": "Petrov's Defense",
+     "pgn": "1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4",
+     "san": [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nf6",
+      "Nxe5",
+      "d6",
+      "Nf3",
+      "Nxe4"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "london",
+   "name": "London System",
+   "advanced": false,
+   "lines": [
+    {
+     "eco": "D02",
+     "name": "Queen's Pawn Game: London System",
+     "pgn": "1. d4 d5 2. Nf3 Nf6 3. Bf4 c5 4. e3 Nc6 5. Nbd2 e6 6. c3",
+     "san": [
+      "d4",
+      "d5",
+      "Nf3",
+      "Nf6",
+      "Bf4",
+      "c5",
+      "e3",
+      "Nc6",
+      "Nbd2",
+      "e6",
+      "c3"
+     ]
+    },
+    {
+     "eco": "A48",
+     "name": "London System, with Bd3",
+     "pgn": "1. d4 Nf6 2. Nf3 g6 3. Bf4 Bg7 4. e3 d6 5. Bd3",
+     "san": [
+      "d4",
+      "Nf6",
+      "Nf3",
+      "g6",
+      "Bf4",
+      "Bg7",
+      "e3",
+      "d6",
+      "Bd3"
+     ]
+    },
+    {
+     "eco": "A46",
+     "name": "Indian Defense: London System",
+     "pgn": "1. d4 Nf6 2. Nf3 e6 3. Bf4",
+     "san": [
+      "d4",
+      "Nf6",
+      "Nf3",
+      "e6",
+      "Bf4"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "queens-gambit",
+   "name": "Queen's Gambit",
+   "advanced": true,
+   "lines": [
+    {
+     "eco": "D53",
+     "name": "Queen's Gambit Declined",
+     "pgn": "1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 Be7 5. Nf3 c6 6. e3 dxc4 7. Bxc4",
+     "san": [
+      "d4",
+      "d5",
+      "c4",
+      "e6",
+      "Nc3",
+      "Nf6",
+      "Bg5",
+      "Be7",
+      "Nf3",
+      "c6",
+      "e3",
+      "dxc4",
+      "Bxc4"
+     ]
+    },
+    {
+     "eco": "D23",
+     "name": "Queen's Gambit Accepted",
+     "pgn": "1. d4 d5 2. c4 dxc4 3. Nf3 Nf6",
+     "san": [
+      "d4",
+      "d5",
+      "c4",
+      "dxc4",
+      "Nf3",
+      "Nf6"
+     ]
+    },
+    {
+     "eco": "D10",
+     "name": "Slav Defense",
+     "pgn": "1. d4 d5 2. c4 c6 3. Nc3 dxc4",
+     "san": [
+      "d4",
+      "d5",
+      "c4",
+      "c6",
+      "Nc3",
+      "dxc4"
+     ]
+    }
+   ]
+  }
+ ],
+ "black": [
+  {
+   "id": "caro-kann",
+   "name": "Caro-Kann Defense",
+   "advanced": false,
+   "lines": [
+    {
+     "eco": "B19",
+     "name": "Caro-Kann Defense: Classical Variation",
+     "pgn": "1. e4 c6 2. d4 d5 3. Nd2 dxe4 4. Nxe4 Bf5 5. Ng3 Bg6 6. h4 h6 7. Nf3 Nd7",
+     "san": [
+      "e4",
+      "c6",
+      "d4",
+      "d5",
+      "Nd2",
+      "dxe4",
+      "Nxe4",
+      "Bf5",
+      "Ng3",
+      "Bg6",
+      "h4",
+      "h6",
+      "Nf3",
+      "Nd7"
+     ]
+    },
+    {
+     "eco": "B12",
+     "name": "Caro-Kann Defense: Advance, Short Variation",
+     "pgn": "1. e4 c6 2. d4 d5 3. e5 Bf5 4. c3 e6 5. Be2",
+     "san": [
+      "e4",
+      "c6",
+      "d4",
+      "d5",
+      "e5",
+      "Bf5",
+      "c3",
+      "e6",
+      "Be2"
+     ]
+    },
+    {
+     "eco": "B13",
+     "name": "Caro-Kann Defense: Exchange Variation, Rubinstein Variation",
+     "pgn": "1. e4 c6 2. d4 d5 3. exd5 cxd5 4. Bd3 Nc6 5. c3 Nf6 6. Bf4",
+     "san": [
+      "e4",
+      "c6",
+      "d4",
+      "d5",
+      "exd5",
+      "cxd5",
+      "Bd3",
+      "Nc6",
+      "c3",
+      "Nf6",
+      "Bf4"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "french",
+   "name": "French Defense",
+   "advanced": true,
+   "lines": [
+    {
+     "eco": "C02",
+     "name": "French Defense: Advance Variation, Main Line",
+     "pgn": "1. e4 e6 2. d4 d5 3. e5 c5 4. c3 Nc6 5. Nf3 Qb6 6. a3",
+     "san": [
+      "e4",
+      "e6",
+      "d4",
+      "d5",
+      "e5",
+      "c5",
+      "c3",
+      "Nc6",
+      "Nf3",
+      "Qb6",
+      "a3"
+     ]
+    },
+    {
+     "eco": "C14",
+     "name": "French Defense: Classical Variation",
+     "pgn": "1. e4 e6 2. d4 d5 3. Nc3 Nf6 4. Bg5 Be7 5. e5 Nfd7 6. Bxe7 Qxe7",
+     "san": [
+      "e4",
+      "e6",
+      "d4",
+      "d5",
+      "Nc3",
+      "Nf6",
+      "Bg5",
+      "Be7",
+      "e5",
+      "Nfd7",
+      "Bxe7",
+      "Qxe7"
+     ]
+    },
+    {
+     "eco": "C01",
+     "name": "French Defense: Exchange Variation",
+     "pgn": "1. e4 e6 2. d4 d5 3. exd5 exd5 4. Nf3",
+     "san": [
+      "e4",
+      "e6",
+      "d4",
+      "d5",
+      "exd5",
+      "exd5",
+      "Nf3"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "open-games",
+   "name": "1...e5 (open games)",
+   "advanced": false,
+   "lines": [
+    {
+     "eco": "C50",
+     "name": "Italian Game: Giuoco Pianissimo",
+     "pgn": "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. Nc3 Nf6 5. O-O O-O 6. d3",
+     "san": [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nc6",
+      "Bc4",
+      "Bc5",
+      "Nc3",
+      "Nf6",
+      "O-O",
+      "O-O",
+      "d3"
+     ]
+    },
+    {
+     "eco": "C90",
+     "name": "Ruy Lopez: Closed",
+     "pgn": "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O",
+     "san": [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nc6",
+      "Bb5",
+      "a6",
+      "Ba4",
+      "Nf6",
+      "O-O",
+      "Be7",
+      "Re1",
+      "b5",
+      "Bb3",
+      "d6",
+      "c3",
+      "O-O"
+     ]
+    },
+    {
+     "eco": "C45",
+     "name": "Scotch Game",
+     "pgn": "1. e4 e5 2. Nf3 Nc6 3. d4 exd4 4. Nxd4 Qh4 5. Nb5 Bb4+ 6. Bd2",
+     "san": [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nc6",
+      "d4",
+      "exd4",
+      "Nxd4",
+      "Qh4",
+      "Nb5",
+      "Bb4+",
+      "Bd2"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "qgd",
+   "name": "Queen's Gambit Declined",
+   "advanced": true,
+   "lines": [
+    {
+     "eco": "D53",
+     "name": "Queen's Gambit Declined",
+     "pgn": "1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 Be7 5. Nf3 c6 6. e3 dxc4 7. Bxc4",
+     "san": [
+      "d4",
+      "d5",
+      "c4",
+      "e6",
+      "Nc3",
+      "Nf6",
+      "Bg5",
+      "Be7",
+      "Nf3",
+      "c6",
+      "e3",
+      "dxc4",
+      "Bxc4"
+     ]
+    },
+    {
+     "eco": "D35",
+     "name": "Queen's Gambit Declined: Exchange Variation",
+     "pgn": "1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. e3 Be7 5. cxd5 exd5 6. Bd3 O-O 7. Nf3 c6",
+     "san": [
+      "d4",
+      "d5",
+      "c4",
+      "e6",
+      "Nc3",
+      "Nf6",
+      "e3",
+      "Be7",
+      "cxd5",
+      "exd5",
+      "Bd3",
+      "O-O",
+      "Nf3",
+      "c6"
+     ]
+    },
+    {
+     "eco": "D02",
+     "name": "Queen's Pawn Game: London System",
+     "pgn": "1. d4 d5 2. Nf3 Nf6 3. Bf4 c5 4. e3 Nc6 5. Nbd2 e6 6. c3",
+     "san": [
+      "d4",
+      "d5",
+      "Nf3",
+      "Nf6",
+      "Bf4",
+      "c5",
+      "e3",
+      "Nc6",
+      "Nbd2",
+      "e6",
+      "c3"
+     ]
+    }
+   ]
+  }
+ ]
+}

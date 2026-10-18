@@ -1,0 +1,56 @@
+{
+  "lessons": {
+    "fs-board": {
+      "youtube": "OCSbzArwB10",
+      "title": "Chess basics"
+    },
+    "l1-hanging": {
+      "youtube": "_KAc128DlMY",
+      "title": "Checks, captures, threats",
+      "short": true
+    },
+    "l1-fork": {
+      "youtube": "nXyJdetptXg",
+      "title": "Key tactical concepts"
+    },
+    "l1-backrank": {
+      "youtube": "iBZLU1FXhcI",
+      "title": "Checkmate patterns"
+    },
+    "l1-opening": {
+      "youtube": "49H728S_VjM",
+      "title": "Openings for White"
+    },
+    "l2-kq-k": {
+      "youtube": "XZeTKbB_LWg",
+      "title": "Endgame principles"
+    },
+    "l2-kr-k": {
+      "youtube": "zOvaUJdtYTc",
+      "title": "The rook checkmate",
+      "short": true
+    },
+    "l2-opposition": {
+      "youtube": "mCsc24k-Q8M",
+      "title": "King and pawn endgames"
+    },
+    "l2-kp-k": {
+      "youtube": "mCsc24k-Q8M",
+      "title": "King and pawn endgames"
+    },
+    "l2-blunder-check": {
+      "playlist": "PLUjxDD7HNNThftJtE0OIRFRMMFf6AV_69",
+      "title": "Habits (Chessbrah)"
+    }
+  },
+  "openings": {
+    "white": {
+      "youtube": "49H728S_VjM",
+      "title": "Openings for White"
+    },
+    "black": {
+      "youtube": "rmbU97iftC8",
+      "title": "Openings for Black"
+    }
+  }
+}

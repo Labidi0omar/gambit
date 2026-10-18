@@ -1,0 +1,116 @@
+{
+  "level": 1,
+  "title": "Tactics",
+  "range": "600-900",
+  "unlockRating": 600,
+  "lessons": [
+    {
+      "id": "l1-hanging",
+      "title": "Hanging pieces",
+      "summary": "Free material: take theirs, guard yours.",
+      "explain": "A pawn is worth 1, a knight or bishop 3, a rook 5 and a queen 9. A piece that is attacked and not protected is hanging: free to take. Before every move, ask what your opponent’s last move attacks and whether any of your pieces are hanging. Take free pieces, and never trade a bigger piece for a smaller one.",
+      "theme": "hangingPiece",
+      "practice": {
+        "theme": "hangingPiece",
+        "label": "Hanging pieces",
+        "count": 5
+      }
+    },
+    {
+      "id": "l1-fork",
+      "title": "The fork",
+      "summary": "One piece attacks two.",
+      "explain": "A fork attacks two things at once, so your opponent can save only one. Knights fork best because nothing can block them. Look for squares that hit the king and another piece. A check that also attacks something is the strongest fork.",
+      "theme": "fork",
+      "practice": {
+        "theme": "fork",
+        "label": "Forks",
+        "count": 5
+      }
+    },
+    {
+      "id": "l1-pin",
+      "title": "The pin",
+      "summary": "Stuck in front of something bigger.",
+      "explain": "A pin freezes a piece because moving it would expose something more valuable behind it. Pinned to the king, it may only slide along the line of the pin or capture the piece pinning it. Once a piece is pinned, attack it again: it cannot run away.",
+      "theme": "pin",
+      "practice": {
+        "theme": "pin",
+        "label": "Pins",
+        "count": 5
+      }
+    },
+    {
+      "id": "l1-skewer",
+      "title": "The skewer",
+      "summary": "Attack the big piece, take the one behind.",
+      "explain": "A skewer is a pin in reverse: the valuable piece stands in front. When it steps out of the line, you take what is behind it. Kings and queens on the same line as a loose piece are the usual targets.",
+      "theme": "skewer",
+      "practice": {
+        "theme": "skewer",
+        "label": "Skewers",
+        "count": 5
+      }
+    },
+    {
+      "id": "l1-discovered",
+      "title": "Discovered attack",
+      "summary": "Move one piece, unleash another.",
+      "explain": "A discovered attack happens when one piece moves out of the way and opens a line for another. The moving piece is free to make its own threat. If the hidden line gives check, the opponent has no time to answer both.",
+      "theme": "discoveredAttack",
+      "practice": {
+        "theme": "discoveredAttack",
+        "label": "Discovered attacks",
+        "count": 5
+      }
+    },
+    {
+      "id": "l1-double-check",
+      "title": "Double check",
+      "summary": "Two checks at once: the king must run.",
+      "explain": "A double check comes from two pieces at the same time, usually through a discovered attack. Blocking or capturing cannot stop both, so the king has to move. That makes it one of the strongest moves in chess.",
+      "theme": "doubleCheck",
+      "practice": {
+        "theme": "doubleCheck",
+        "label": "Double checks",
+        "count": 5
+      }
+    },
+    {
+      "id": "l1-backrank",
+      "title": "Back-rank mate",
+      "summary": "A king trapped by its own pawns.",
+      "explain": "A castled king behind three unmoved pawns has no escape square. A rook or queen landing on the back rank then mates. Look for it in every game, and give your own king room with a pawn move like h3.",
+      "theme": "backRankMate",
+      "practice": {
+        "theme": "backRankMate",
+        "label": "Back-rank mates",
+        "count": 5
+      }
+    },
+    {
+      "id": "l1-smothered",
+      "title": "Smothered mate",
+      "summary": "A knight mates a boxed-in king.",
+      "explain": "In a smothered mate the king is surrounded by its own pieces and a knight gives check. Nothing can block a knight check, so if no piece can capture the knight, it is mate. A queen sacrifice often forces the last blocker into place.",
+      "theme": "smotheredMate",
+      "practice": {
+        "theme": "smotheredMate",
+        "label": "Smothered mates",
+        "count": 5
+      }
+    },
+    {
+      "id": "l1-opening",
+      "title": "Opening principles",
+      "summary": "Center, develop, castle. No memorizing.",
+      "explain": "Take the center with pawns, bring out knights and bishops, and castle early. Don't move a piece twice or bring the queen out early without a reason. These positions show what happens when someone skips those rules.",
+      "theme": "opening",
+      "practice": {
+        "theme": "opening",
+        "label": "Opening tactics",
+        "count": 5
+      }
+    }
+  ]
+}
