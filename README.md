@@ -22,7 +22,7 @@ Then open http://localhost:5173. Everything the app needs is in the repo, includ
 
 ## Rebuilding the data (optional)
 
-The full puzzle database is attached to the [v0.1.0 release](https://github.com/Labidi0omar/gambit/releases/tag/v0.1.0) (`lichess_db_puzzle.csv.zst`, 307 MB). To rebuild the puzzle sets and lesson demos from it:
+The app ships with 15,000 puzzles already selected (`public/puzzles`), so this is only for a fresh selection. Download the full database (`lichess_db_puzzle.csv.zst`, about 300 MB) from https://database.lichess.org/#puzzles, then:
 
 ```bash
 # put lichess_db_puzzle.csv.zst in data/, then:
