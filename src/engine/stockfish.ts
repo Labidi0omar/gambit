@@ -33,7 +33,14 @@ export class Engine {
       this.listeners.forEach((l) => l(line));
     };
     this.ready = (async () => {
-      await this.cmd('uci', (l) => l === 'uciok');
+      // The wasm build drops messages that arrive while it is still downloading/compiling
+      // (slow on phones), so keep saying "uci" until it answers.
+      const retry = setInterval(() => this.send('uci'), 500);
+      try {
+        await this.cmd('uci', (l) => l === 'uciok');
+      } finally {
+        clearInterval(retry);
+      }
       await this.isReady();
     })();
   }
