@@ -24,7 +24,7 @@ export function loadBand([lo, hi]: [number, number]): Promise<Puzzle[]> {
   const key = `${lo}-${hi}`;
   let p = cache.get(key);
   if (!p) {
-    p = fetch(`/puzzles/${key}.json`).then((r) => {
+    p = fetch(`${import.meta.env.BASE_URL}puzzles/${key}.json`).then((r) => {
       if (!r.ok) throw new Error(`missing ${key}.json`);
       return r.json() as Promise<Puzzle[]>;
     });

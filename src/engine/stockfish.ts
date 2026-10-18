@@ -26,7 +26,8 @@ export class Engine {
   private queue: Promise<unknown> = Promise.resolve();
 
   constructor() {
-    this.worker = new Worker('/stockfish/stockfish-18-lite-single.js');
+    // BASE_URL keeps this working when the site is served from a sub-path (GitHub Pages: /gambit/).
+    this.worker = new Worker(`${import.meta.env.BASE_URL}stockfish/stockfish-18-lite-single.js`);
     this.worker.onmessage = (e: MessageEvent) => {
       const line = typeof e.data === 'string' ? e.data : String(e.data);
       this.listeners.forEach((l) => l(line));
