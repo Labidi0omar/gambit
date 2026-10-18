@@ -15,11 +15,7 @@ import { useUnlocks } from '../lib/useUnlocks';
 import { sound } from '../lib/sound';
 import { randomLine, findRepertoire, ADVANCED_RATING } from '../lib/openings';
 import { useOpenings } from '../store/openings';
-import { cctExpected, sameArrow, useCctStats, type CctItem } from '../lib/cct';
-import { CctPanel, type CctPhase } from '../components/CctPanel';
-import { useLessons, levelUnlocked } from '../store/lessons';
 import { usePuzzles } from '../store/puzzles';
-import type { DrawShape } from 'chessground/draw';
 import { MoveNav, useBrowse } from '../components/MoveNav';
 
 const NO_DESTS = new Map<Key, Key[]>();
@@ -36,22 +32,12 @@ const COLOR_LABEL = { w: 'White', r: 'Random', b: 'Black' } as const;
 const RESULT_LABEL: Record<GameResult, string> = { win: 'You won', loss: 'You lost', draw: 'Draw' };
 
 export function Play() {
-  const { botElo, setBotElo, recordResult, recent, cct: cctOn, setCct } = useBot();
-  const completed = useLessons((s) => s.completed);
-  const puzzleRating = usePuzzles((s) => s.rating);
-  const cctUnlocked = levelUnlocked(1, completed, puzzleRating);
+  const { botElo, setBotElo, recordResult, recent } = useBot();
   // No numbers before ratings are taught: the bot is just "the bot" until then.
   const showNumbers = useUnlocks().ratings;
-  const recordCct = useCctStats((s) => s.record);
   // Opening practice: half the games, the bot follows a line from your chosen repertoire.
   const book = useRef<string[] | null>(null);
   const [bookName, setBookName] = useState<string | null>(null);
-  // CCT scan state for the current move.
-  const [cctPhase, setCctPhase] = useState<CctPhase>('move');
-  const [marks, setMarks] = useState<string[]>([]);
-  const [markFrom, setMarkFrom] = useState<Key | null>(null);
-  const [cctResult, setCctResult] = useState<{ expected: CctItem[]; missed: CctItem[] } | null>(null);
-  const [cctChecking, setCctChecking] = useState(false);
   const addGame = useGames((s) => s.addGame);
   const go = useNav((s) => s.go);
   const logDay = useDaily((s) => s.log);
@@ -71,7 +57,6 @@ export function Play() {
   const [engineError, setEngineError] = useState(false);
   const [engineTry, setEngineTry] = useState(0);
   const lastTick = useRef(0);
-  const clockPaused = useRef(false);
   const statusRef = useRef<Status>('setup');
   statusRef.current = status;
 
@@ -150,7 +135,6 @@ export function Play() {
       const now = performance.now();
       const dt = now - lastTick.current;
       lastTick.current = now;
-      if (clockPaused.current) return; // the CCT scan is training, not thinking time
       const side = chess.current.turn();
       setClocks((cl) => {
         const left = cl[side] - dt;
@@ -233,71 +217,10 @@ export function Play() {
   };
 
   const myTurn = status === 'playing' && turn === userSide && !promo;
-  const cctActive = cctOn && cctUnlocked && status === 'playing';
-  clockPaused.current = cctActive && myTurn && cctPhase !== 'move';
-  const canMove = myTurn && (!cctActive || cctPhase === 'move');
+  const canMove = myTurn;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const dests = useMemo(() => (canMove ? toDests(chess.current) : new Map<Key, Key[]>()), [canMove, fen]);
 
-  // Each of my turns in CCT mode starts a fresh scan: theirs first (skipped when I'm in check), then mine.
-  useEffect(() => {
-    if (!myTurn || !cctActive) return;
-    setCctPhase(chess.current.inCheck() ? 'mine' : 'theirs');
-    setMarks([]);
-    setMarkFrom(null);
-    setCctResult(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fen, myTurn, cctActive]);
-
-  const onMark = (k: Key) => {
-    if (!myTurn || !cctActive || cctPhase === 'move' || cctResult) return;
-    if (!markFrom) return setMarkFrom(k);
-    if (markFrom === k) return setMarkFrom(null);
-    const uci = markFrom + k;
-    setMarks((m) => (m.some((x) => sameArrow(x, uci)) ? m.filter((x) => !sameArrow(x, uci)) : [...m, uci]));
-    setMarkFrom(null);
-  };
-
-  const checkScan = async () => {
-    if (cctPhase === 'move') return;
-    setCctChecking(true);
-    let expected;
-    try {
-      expected = await cctExpected(chess.current.fen(), cctPhase, botElo);
-    } catch {
-      // No engine, no answer key: let them play instead of leaving the board locked.
-      setCctChecking(false);
-      setEngineError(true);
-      return skipScan();
-    }
-    setCctChecking(false);
-    recordCct(expected, marks);
-    setCctResult({ expected, missed: expected.filter((e) => !marks.some((m) => sameArrow(m, e.uci))) });
-  };
-
-  const skipScan = () => {
-    setCctResult(null);
-    setMarks([]);
-    setMarkFrom(null);
-    setCctPhase('move');
-  };
-
-  const nextScan = () => {
-    setCctResult(null);
-    setMarks([]);
-    setMarkFrom(null);
-    setCctPhase(cctPhase === 'theirs' ? 'mine' : 'move');
-  };
-
-  const arrowOf = (uci: string, brush: string): DrawShape => ({ orig: uci.slice(0, 2) as Key, dest: uci.slice(2, 4) as Key, brush });
-  const cctShapes: DrawShape[] =
-    cctActive && myTurn && cctPhase !== 'move'
-      ? [
-          ...marks.map((m) => arrowOf(m, cctPhase === 'theirs' ? 'blue' : 'green')),
-          ...(cctResult?.missed.map((m) => arrowOf(m.uci, 'red')) ?? []),
-        ]
-      : [];
-  const cctHighlights = markFrom ? new Map<Key, string>([[markFrom, 'mark']]) : undefined;
   const orientation = userSide === 'w' ? 'white' : 'black';
   const botSide: Side = userSide === 'w' ? 'b' : 'w';
   const history = c.history();
@@ -322,9 +245,6 @@ export function Play() {
               lastMove={bv ? bv.lastMove : lastMove}
               check={bv ? bv.check : c.inCheck()}
               viewOnly={!!bv || status !== 'playing'}
-              shapes={bv ? undefined : cctShapes}
-              highlights={bv ? undefined : cctHighlights}
-              onSelect={onMark}
               onMove={onUserMove}
             />
             <AnimatePresence>
@@ -375,19 +295,6 @@ export function Play() {
           </p>
         </div>
 
-        {cctActive && myTurn && (
-          <CctPanel
-            phase={cctPhase}
-            marks={marks.length}
-            result={cctResult}
-            checking={cctChecking}
-            onDone={checkScan}
-            onNext={nextScan}
-            onSkip={skipScan}
-            onClear={() => setMarks([])}
-          />
-        )}
-
         {engineError && status === 'playing' && (
           <div className="flex flex-col gap-3 bg-surface-2 px-5 py-4">
             <p className="text-[17px]">The chess engine didn't load, so the bot can't move. Check your connection, then try again.</p>
@@ -407,23 +314,6 @@ export function Play() {
 
         {status !== 'playing' ? (
           <div className="glass flex flex-col gap-3 p-5">
-            <label className={`flex items-start gap-3 ${cctUnlocked ? 'cursor-pointer' : 'hidden'}`}>
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4 accent-[var(--color-accent)]"
-                checked={cctOn && cctUnlocked}
-                disabled={!cctUnlocked}
-                onChange={(e) => setCct(e.target.checked)}
-              />
-              <span>
-                <span className="block text-[15px] font-semibold">CCT mode</span>
-                <span className="block text-sm text-ink-2">
-                  {cctUnlocked
-                    ? 'Before each move, mark their checks, captures and threats, then yours. Stockfish shows what you missed.'
-                    : 'Unlocks at Level 1.'}
-                </span>
-              </span>
-            </label>
             <div className="grid grid-cols-3 gap-2">
               {(['w', 'r', 'b'] as const).map((k) => (
                 <button

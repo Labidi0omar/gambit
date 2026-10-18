@@ -39,10 +39,9 @@ describe('progressive reveal', () => {
     expect(unlocks({ ...base, startedAt: Date.now() - 7 * 86_400_000 }).ratings).toBe(true);
     expect(unlocks({ ...base, level1: true }).ratings).toBe(true);
   });
-  it('opens openings at Level 1 after 10 games, CCT at Level 1', () => {
+  it('opens openings at Level 1 after 10 games', () => {
     expect(unlocks({ ...base, level1: true, gamesPlayed: 9 }).openings).toBe(false);
     expect(unlocks({ ...base, level1: true, gamesPlayed: 10 }).openings).toBe(true);
-    expect(unlocks({ ...base, level1: true }).cct).toBe(true);
   });
 });
 

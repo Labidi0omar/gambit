@@ -7,7 +7,7 @@ export type GameResult = 'win' | 'loss' | 'draw';
 interface BotState {
   botElo: number;
   recent: GameResult[]; // last results at current Elo
-  /** CCT mode: scan checks, captures, threats before each move (Level 1+). */
+  /** Old CCT-mode toggle; the mode was removed. Kept so saved settings load unchanged. */
   cct: boolean;
   setCct: (on: boolean) => void;
   setBotElo: (elo: number) => void;

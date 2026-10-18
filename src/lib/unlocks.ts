@@ -1,7 +1,7 @@
 // Progressive reveal: features open one at a time, each with an intro card.
 import { STEPS } from './firststeps';
 
-export type Feature = 'puzzles' | 'play' | 'learn' | 'ratings' | 'cct' | 'openings';
+export type Feature = 'puzzles' | 'play' | 'learn' | 'ratings' | 'openings';
 
 export interface UnlockInput {
   done: Record<string, number>;
@@ -26,7 +26,6 @@ export function unlocks(i: UnlockInput): Record<Feature, boolean> {
     play,
     learn: i.level1,
     ratings: i.level1 || (i.startedAt > 0 && now - i.startedAt >= WEEK),
-    cct: i.level1,
     openings: i.level1 && i.gamesPlayed >= 10,
   };
 }
@@ -53,11 +52,6 @@ export const FEATURE_INTRO: Record<Feature, { title: string; what: string; why: 
     what: 'A rating is a number that goes up when you solve puzzles and down when you miss them. Beginners start around 500.',
     why: 'It shows your progress over weeks, not single days, so don’t worry about small ups and downs.',
   },
-  cct: {
-    title: 'CCT mode',
-    what: 'Before each move, you mark every check, capture and threat for both sides. Stockfish shows what you missed.',
-    why: 'It builds the habit that stops blunders. Turn it on in Play.',
-  },
   openings: {
     title: 'Openings',
     what: 'An opening is the first few moves of a game. Pick one for White and one for Black, and drill them.',
@@ -73,7 +67,6 @@ export function howToUnlock(f: Feature, gamesPlayed: number): string {
     case 'play':
       return 'It opens when you reach it on the First Steps path.';
     case 'learn':
-    case 'cct':
       return 'It opens when you finish First Steps, or reach a 600 puzzle rating.';
     case 'ratings':
       return 'It opens when you finish First Steps, or a week after you started.';
@@ -83,4 +76,4 @@ export function howToUnlock(f: Feature, gamesPlayed: number): string {
 }
 
 /** Order intros appear in when several open at once. */
-export const FEATURE_ORDER: Feature[] = ['puzzles', 'play', 'learn', 'ratings', 'cct', 'openings'];
+export const FEATURE_ORDER: Feature[] = ['puzzles', 'play', 'learn', 'ratings', 'openings'];

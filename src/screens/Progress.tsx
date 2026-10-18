@@ -10,7 +10,7 @@ import { estimatedStrength } from '../lib/plan';
 import { ratingStatus } from '../lib/rating';
 import { motion } from 'framer-motion';
 import { rise } from '../components/ui';
-import { blunderStep, useCctStats, CCT_KINDS, type CctKind } from '../lib/cct';
+import { blunderStep, CCT_KINDS, type CctKind } from '../lib/cct';
 import { positions } from '../lib/review';
 
 const GOAL = 1200;
@@ -33,8 +33,7 @@ export function Progress() {
   const rs = ratingStatus(attempts);
   const pct = rs.established ? Math.min(100, (est.elo / GOAL) * 100) : 0;
 
-  // Which CCT step each of your blunders skipped, across reviewed games.
-  const cct = useCctStats();
+  // What each of your blunders missed (a check, a capture or a threat), across reviewed games.
   const skipped: Record<CctKind, number> = { check: 0, capture: 0, threat: 0 };
   for (const g of games) {
     if (!g.analysis) continue;
@@ -108,19 +107,15 @@ export function Progress() {
         <h2 className="display-m mb-2">Blind spots</h2>
         <p className="mb-8 max-w-[52ch] text-[17px] text-ink-2">
           {totalSkipped
-            ? `Your blunders, by the CCT step you skipped. ${worst ? `${CCT_NAME[worst]} cost you the most.` : ''}`
-            : 'Review a game to see which CCT step your blunders skip: checks, captures or threats.'}
+            ? `Your blunders, by what you missed. ${worst ? `${CCT_NAME[worst]} cost you the most.` : ''}`
+            : 'Review a game to see what your blunders miss: checks, captures or threats.'}
         </p>
         <div className="grid grid-cols-3 gap-6">
           {CCT_KINDS.map((k) => {
-            const t = cct.tally[k];
             return (
               <div key={k}>
                 <div className={`num text-6xl font-semibold leading-none ${worst === k ? 'text-down' : ''}`}>{skipped[k]}</div>
                 <div className="mt-3 text-[17px] font-semibold">Missed {k === 'check' ? 'checks' : k === 'capture' ? 'captures' : 'threats'}</div>
-                <div className="mt-1 text-[15px] text-ink-2">
-                  {t.total ? `CCT scans: found ${t.found} of ${t.total}` : 'No CCT scans yet'}
-                </div>
               </div>
             );
           })}
