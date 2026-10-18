@@ -65,5 +65,22 @@ export const FEATURE_INTRO: Record<Feature, { title: string; what: string; why: 
   },
 };
 
+/** How to open a feature that is still locked, for anywhere that links to it. */
+export function howToUnlock(f: Feature, gamesPlayed: number): string {
+  const left = Math.max(0, 10 - gamesPlayed);
+  switch (f) {
+    case 'puzzles':
+    case 'play':
+      return 'It opens when you reach it on the First Steps path.';
+    case 'learn':
+    case 'cct':
+      return 'It opens when you finish First Steps, or reach a 600 puzzle rating.';
+    case 'ratings':
+      return 'It opens when you finish First Steps, or a week after you started.';
+    case 'openings':
+      return `It opens after First Steps and 10 bot games${left ? ` (${left} to go)` : ''}.`;
+  }
+}
+
 /** Order intros appear in when several open at once. */
 export const FEATURE_ORDER: Feature[] = ['puzzles', 'play', 'learn', 'ratings', 'cct', 'openings'];

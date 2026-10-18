@@ -68,9 +68,17 @@ export function Play() {
   const [promo, setPromo] = useState<{ from: Key; to: Key } | null>(null);
   const [result, setResult] = useState<{ r: GameResult; reason: string; raised?: number; gameId?: string } | null>(null);
   const [thinking, setThinking] = useState(false);
+  const [engineError, setEngineError] = useState(false);
+  const [engineTry, setEngineTry] = useState(0);
   const lastTick = useRef(0);
+  const clockPaused = useRef(false);
   const statusRef = useRef<Status>('setup');
   statusRef.current = status;
+
+  // Start loading Stockfish (a few MB of wasm) as soon as Play opens, not when the first move is due.
+  useEffect(() => {
+    getEngine();
+  }, []);
 
   const c = chess.current;
   const turn = c.turn();
@@ -142,6 +150,7 @@ export function Play() {
       const now = performance.now();
       const dt = now - lastTick.current;
       lastTick.current = now;
+      if (clockPaused.current) return; // the CCT scan is training, not thinking time
       const side = chess.current.turn();
       setClocks((cl) => {
         const left = cl[side] - dt;
@@ -172,12 +181,18 @@ export function Play() {
       book.current = null; // left the book
       setBookName(null);
     }
-    botMove(fen, botElo).then((uci) => {
-      if (id !== gameId.current) return;
-      setThinking(false);
-      applyMove(uci.slice(0, 2), uci.slice(2, 4), uci[4]);
-    });
-  }, [status, turn, fen, userSide, botElo, applyMove]);
+    botMove(fen, botElo)
+      .then((uci) => {
+        if (id !== gameId.current) return;
+        setThinking(false);
+        applyMove(uci.slice(0, 2), uci.slice(2, 4), uci[4]);
+      })
+      .catch(() => {
+        if (id !== gameId.current) return;
+        setThinking(false);
+        setEngineError(true);
+      });
+  }, [status, turn, fen, userSide, botElo, applyMove, engineTry]);
 
   const start = async () => {
     gameId.current++;
@@ -195,9 +210,10 @@ export function Play() {
     setLastMove(undefined);
     setResult(null);
     setPromo(null);
-    const engine = getEngine();
-    await engine.newGame();
-    await engine.setStrength({ elo: botElo });
+    setEngineError(false);
+    // Don't wait for Stockfish to load: the board is playable now, and the bot's first move
+    // simply queues behind the load. Each engine job sets its own strength.
+    getEngine().newGame().catch(() => setEngineError(true));
     setStatus('playing');
     rerender();
   };
@@ -218,6 +234,7 @@ export function Play() {
 
   const myTurn = status === 'playing' && turn === userSide && !promo;
   const cctActive = cctOn && cctUnlocked && status === 'playing';
+  clockPaused.current = cctActive && myTurn && cctPhase !== 'move';
   const canMove = myTurn && (!cctActive || cctPhase === 'move');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const dests = useMemo(() => (canMove ? toDests(chess.current) : new Map<Key, Key[]>()), [canMove, fen]);
@@ -244,10 +261,25 @@ export function Play() {
   const checkScan = async () => {
     if (cctPhase === 'move') return;
     setCctChecking(true);
-    const expected = await cctExpected(chess.current.fen(), cctPhase, botElo);
+    let expected;
+    try {
+      expected = await cctExpected(chess.current.fen(), cctPhase, botElo);
+    } catch {
+      // No engine, no answer key: let them play instead of leaving the board locked.
+      setCctChecking(false);
+      setEngineError(true);
+      return skipScan();
+    }
     setCctChecking(false);
     recordCct(expected, marks);
     setCctResult({ expected, missed: expected.filter((e) => !marks.some((m) => sameArrow(m, e.uci))) });
+  };
+
+  const skipScan = () => {
+    setCctResult(null);
+    setMarks([]);
+    setMarkFrom(null);
+    setCctPhase('move');
   };
 
   const nextScan = () => {
@@ -351,8 +383,24 @@ export function Play() {
             checking={cctChecking}
             onDone={checkScan}
             onNext={nextScan}
+            onSkip={skipScan}
             onClear={() => setMarks([])}
           />
+        )}
+
+        {engineError && status === 'playing' && (
+          <div className="flex flex-col gap-3 bg-surface-2 px-5 py-4">
+            <p className="text-[17px]">The chess engine didn't load, so the bot can't move. Check your connection, then try again.</p>
+            <button
+              onClick={() => {
+                setEngineError(false);
+                setEngineTry((n) => n + 1);
+              }}
+              className="btn-primary self-start"
+            >
+              Try again
+            </button>
+          </div>
         )}
 
         {status === 'playing' && bookName && <p className="px-1 text-[15px] text-ink-2">Opening practice: {bookName}</p>}

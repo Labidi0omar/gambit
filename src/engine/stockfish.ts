@@ -9,6 +9,7 @@ export interface Strength {
 }
 
 export const FULL_STRENGTH = 3190;
+const LOAD_TIMEOUT_MS = 30_000;
 
 export interface Analysis {
   /** centipawns from the side to move's view (null when mate) */
@@ -24,6 +25,8 @@ export class Engine {
   private listeners = new Set<Listener>();
   private ready: Promise<void>;
   private queue: Promise<unknown> = Promise.resolve();
+  /** Strength the engine is set to now. Every job sets its own, so callers can't leak settings into each other. */
+  private strength: number | null = null;
 
   constructor() {
     // BASE_URL keeps this working when the site is served from a sub-path (GitHub Pages: /gambit/).
@@ -36,13 +39,24 @@ export class Engine {
       // The wasm build drops messages that arrive while it is still downloading/compiling
       // (slow on phones), so keep saying "uci" until it answers.
       const retry = setInterval(() => this.send('uci'), 500);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      // Never hang forever: a failed download or a crashed worker rejects every waiting job.
+      const failed = new Promise<never>((_, reject) => {
+        this.worker.onerror = () => reject(new Error('Stockfish failed to load'));
+        timer = setTimeout(() => reject(new Error('Stockfish took too long to load')), LOAD_TIMEOUT_MS);
+      });
       try {
-        await this.cmd('uci', (l) => l === 'uciok');
+        await Promise.race([this.cmd('uci', (l) => l === 'uciok'), failed]);
       } finally {
         clearInterval(retry);
+        clearTimeout(timer);
       }
       await this.isReady();
     })();
+    this.ready.catch(() => {
+      if (shared === this) shared = null; // the next getEngine() tries a fresh worker
+      this.worker.terminate();
+    });
   }
 
   private send(c: string) {
@@ -76,6 +90,16 @@ export class Engine {
 
   setStrength({ elo }: Strength) {
     return this.enqueue(async () => {
+      this.apply(elo);
+      await this.isReady();
+    });
+  }
+
+  /** Send the options for `elo` if the engine isn't already there. Only call inside a queued job. */
+  private apply(elo: number) {
+    if (this.strength === elo) return;
+    this.strength = elo;
+    {
       const p = weakBotParams(elo);
       if (elo >= FULL_STRENGTH) {
         this.send('setoption name UCI_LimitStrength value false');
@@ -92,8 +116,7 @@ export class Engine {
         this.send(`setoption name Skill Level value ${p.skill}`);
         this.send(`setoption name MultiPV value ${p.multipv}`);
       }
-      await this.isReady();
-    });
+    }
   }
 
   /** Aborts any search still running for an abandoned game, then resets. */
@@ -106,9 +129,10 @@ export class Engine {
   }
 
   /** Returns best move in UCI notation (e.g. "e2e4", "e7e8q"). */
-  bestMove(fen: string, opts: { movetime?: number; depth?: number } = {}): Promise<string> {
+  bestMove(fen: string, opts: { movetime?: number; depth?: number; elo?: number } = {}): Promise<string> {
     return this.enqueue(async () => {
       this.send('stop');
+      this.apply(opts.elo ?? FULL_STRENGTH);
       this.send(`position fen ${fen}`);
       const go = opts.depth ? `go depth ${opts.depth}` : `go movetime ${opts.movetime ?? 500}`;
       const line = await this.cmd(go, (l) => l.startsWith('bestmove'));
@@ -120,11 +144,12 @@ export class Engine {
     });
   }
 
-  /** Full-strength analysis to a fixed depth. Call setStrength({ elo: FULL_STRENGTH }) first. */
+  /** Full-strength analysis to a fixed depth. */
   analyze(fen: string, depth: number): Promise<Analysis> {
     return this.enqueue(async () => {
       const res: Analysis = { cp: 0, mate: null, best: '', pv: [] };
       this.send('stop');
+      this.apply(FULL_STRENGTH);
       this.send(`position fen ${fen}`);
       const line = await this.cmd(`go depth ${depth}`, (l) => l.startsWith('bestmove'), (l) => {
         if (!l.startsWith('info') || l.includes('lowerbound') || l.includes('upperbound')) return;
@@ -150,20 +175,16 @@ export class Engine {
     });
   }
 
-  /** The top MultiPV lines (count set by setStrength) at a fixed depth, best first. */
-  candidates(fen: string, depth: number): Promise<Candidate[]> {
+  /** The top MultiPV lines at a fixed depth, best first. `elo` sets how many lines (see weak.ts). */
+  candidates(fen: string, depth: number, elo: number): Promise<Candidate[]> {
     return this.enqueue(async () => {
       const lines = new Map<number, Candidate>();
       this.send('stop');
+      this.apply(elo);
       this.send(`position fen ${fen}`);
       await this.cmd(`go depth ${depth}`, (l) => l.startsWith('bestmove'), (l) => {
-        if (!l.startsWith('info') || l.includes('bound')) return;
-        const k = Number(l.match(/ multipv (\d+)/)?.[1] ?? 1);
-        const s = l.match(/score (cp|mate) (-?\d+)/);
-        const pv = l.match(/ pv (S+)/);
-        if (!s || !pv) return;
-        const cp = s[1] === 'cp' ? Number(s[2]) : Math.sign(Number(s[2]) || -1) * 3000;
-        lines.set(k, { uci: pv[1], cp });
+        const c = parseCandidate(l);
+        if (c) lines.set(c.k, { uci: c.uci, cp: c.cp });
       });
       return [...lines.entries()].sort((a, b) => a[0] - b[0]).map(([, c]) => c);
     });
@@ -176,6 +197,17 @@ export class Engine {
   terminate() {
     this.worker.terminate();
   }
+}
+
+/** One MultiPV "info" line -> its line number, first move and score (mate = +-3000). Null if it isn't one. */
+export function parseCandidate(l: string): { k: number; uci: string; cp: number } | null {
+  if (!l.startsWith('info') || l.includes('bound')) return null;
+  const s = l.match(/score (cp|mate) (-?\d+)/);
+  const pv = l.match(/ pv (\S+)/);
+  if (!s || !pv) return null;
+  const k = Number(l.match(/ multipv (\d+)/)?.[1] ?? 1);
+  const cp = s[1] === 'cp' ? Number(s[2]) : Math.sign(Number(s[2]) || -1) * 3000;
+  return { k, uci: pv[1], cp };
 }
 
 let shared: Engine | null = null;

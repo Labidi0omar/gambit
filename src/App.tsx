@@ -17,6 +17,8 @@ import { useNav, type Tab } from './store/nav';
 import { useSound } from './store/sound';
 import { useJourney, firstStepsDone } from './store/journey';
 import { useUnlocks } from './lib/useUnlocks';
+import { howToUnlock, type Feature } from './lib/unlocks';
+import { useGames } from './store/games';
 
 type NavTab = Exclude<Tab, 'session'>;
 const LABEL: Record<NavTab, string> = { today: 'Today', learn: 'Learn', puzzles: 'Puzzles', openings: 'Openings', play: 'Play', review: 'Games', progress: 'Progress' };
@@ -26,6 +28,7 @@ export default function App() {
   const { muted, toggle } = useSound();
   const journey = useJourney();
   const open = useUnlocks();
+  const gamesPlayed = useGames((s) => s.games.length);
   const pathDone = firstStepsDone(journey);
 
   // Progressive reveal: a tab exists only once its feature is open.
@@ -43,10 +46,6 @@ export default function App() {
   const phoneTabs = (['today', 'learn', 'puzzles', 'play', 'review', 'progress'] as NavTab[]).filter((t) => visible[t]);
   const showNav = tab !== 'session' && desktopLinks.length > 0;
 
-  // A locked tab saved from an earlier visit falls back to home.
-  useEffect(() => {
-    if (tab !== 'session' && !visible[tab as NavTab]) go('today');
-  });
 
   // Play stays mounted so a running game survives tab switches; chessground caches its
   // board bounds, so tell it to re-measure when the board becomes visible again.
@@ -70,7 +69,22 @@ export default function App() {
       </MotionConfig>
     );
 
+  // A link (or a tab saved from an earlier visit) can point at a locked feature. Say so and say how
+  // to open it, rather than silently bouncing home: a bounce looks like a broken button.
+  const lockedFeature: Feature | null =
+    tab !== 'session' && !visible[tab as NavTab] ? (tab === 'review' ? 'play' : tab === 'progress' ? 'ratings' : (tab as Feature)) : null;
+
   const page = (() => {
+    if (lockedFeature)
+      return (
+        <div className="mx-auto flex w-full max-w-[640px] flex-col gap-6 px-4 pb-20 pt-10 md:pt-16">
+          <h1 className="display-m">{LABEL[tab as NavTab]} isn't open yet</h1>
+          <p className="text-xl leading-relaxed">{howToUnlock(lockedFeature, gamesPlayed)}</p>
+          <button onClick={() => go('today')} className="btn-primary self-start">
+            Back to home
+          </button>
+        </div>
+      );
     switch (tab) {
       case 'session':
         return <Session />;

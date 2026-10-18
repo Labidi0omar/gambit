@@ -105,6 +105,8 @@ function GameReview({ game }: { game: GameRecord }) {
   const pos = useMemo(() => positions(game), [game]);
   const a = game.analysis;
   const [progress, setProgress] = useState(0);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [cur, setCur] = useState(0);
   const [practice, setPractice] = useState(false);
   const orientation = game.userColor === 'w' ? 'white' : 'black';
@@ -113,16 +115,18 @@ function GameReview({ game }: { game: GameRecord }) {
   useEffect(() => {
     if (a) return;
     let cancelled = false;
-    analyzeGame(game, (d, t) => setProgress(d / t), () => cancelled).then((res) => {
-      if (!res || cancelled) return;
-      setAnalysis(game.id, res);
-      feedTraining(game, res, pos);
-    });
+    analyzeGame(game, (d, t) => setProgress(d / t), () => cancelled)
+      .then((res) => {
+        if (!res || cancelled) return;
+        setAnalysis(game.id, res);
+        feedTraining(game, res, pos);
+      })
+      .catch(() => !cancelled && setFailed(true));
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [attempt]);
 
   useEffect(() => {
     if (practice) return;
@@ -194,7 +198,21 @@ function GameReview({ game }: { game: GameRecord }) {
             </button>
             <span className="text-xs text-zinc-500">vs Stockfish {game.botElo}</span>
           </div>
-          {!a ? (
+          {!a && failed ? (
+            <div className="mt-4 flex flex-col gap-3">
+              <p className="text-sm text-zinc-300">The chess engine didn't load, so this game can't be analyzed yet. Check your connection.</p>
+              <button
+                onClick={() => {
+                  setFailed(false);
+                  setProgress(0);
+                  setAttempt((n) => n + 1);
+                }}
+                className="btn-primary self-start"
+              >
+                Try again
+              </button>
+            </div>
+          ) : !a ? (
             <div className="mt-4">
               <div className="mb-2 text-sm text-zinc-300">Analyzing every move (depth 14)&hellip;</div>
               <div className="h-1.5 overflow-hidden rounded-full bg-white/10">

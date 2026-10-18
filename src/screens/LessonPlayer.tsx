@@ -282,6 +282,12 @@ function PlayStep({ step, onSolved, setFeedback }: StepProps<'play'>) {
         setThinking(false);
         if (step.goal === 'promote' && !r.board().flat().some((p) => p?.type === 'p' && p.color === us)) fail('Your pawn was captured.');
         else if (r.isDraw()) fail('That position is a draw.');
+      })
+      .catch(() => {
+        if (id !== gen.current) return;
+        setThinking(false);
+        setOver('lost');
+        setFeedback({ tone: 'bad', text: "The chess engine didn't load. Check your connection, then press Retry." });
       });
   };
 

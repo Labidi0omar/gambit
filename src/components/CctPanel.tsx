@@ -13,6 +13,7 @@ export function CctPanel({
   onDone,
   onNext,
   onClear,
+  onSkip,
 }: {
   phase: CctPhase;
   marks: number;
@@ -21,6 +22,7 @@ export function CctPanel({
   onDone: () => void;
   onNext: () => void;
   onClear: () => void;
+  onSkip: () => void;
 }) {
   if (phase === 'move') {
     return (
@@ -40,7 +42,8 @@ export function CctPanel({
         <p className="mt-2 text-[15px] text-ink-2">
           {phase === 'theirs'
             ? 'If it were their move, what could they do? Tap a piece, then where it could go.'
-            : 'Now your own forcing moves. Tap a piece, then where it could go.'}
+            : 'Now your own forcing moves. Tap a piece, then where it could go.'}{' '}
+          Your pieces unlock after this scan.
         </p>
       </div>
 
@@ -54,6 +57,9 @@ export function CctPanel({
               Clear
             </button>
           )}
+          <button onClick={onSkip} className="link text-[15px] text-ink-2">
+            Skip, just move
+          </button>
         </div>
       ) : (
         <>
