@@ -6,12 +6,16 @@ import { useDaily } from '../store/daily';
 import { LessonPlayer } from './LessonPlayer';
 import { Icon, PieceArt, Row, RowGroup, rise, type Role } from '../components/ui';
 import { nextLesson } from '../lib/plan';
+import { useUnlocks } from '../lib/useUnlocks';
+import { useGames } from '../store/games';
 
 export function Learn() {
   const { completed, complete } = useLessons();
   const rating = usePuzzleRating();
   const { lessonId, go } = useNav();
   const logDay = useDaily((s) => s.log);
+  const open = useUnlocks();
+  const gamesPlayed = useGames((s) => s.games.length);
 
   const lesson = ALL_LESSONS.find((l) => l.id === lessonId);
   if (lesson) {
@@ -57,9 +61,13 @@ export function Learn() {
             </motion.div>
           )}
           <motion.div {...rise(3)} className="mt-6">
-            <button onClick={() => go('openings')} className="link text-[17px]">
-              Drill your openings
-            </button>
+            {open.openings ? (
+              <button onClick={() => go('openings')} className="link text-[17px]">
+                Drill your openings
+              </button>
+            ) : (
+              <p className="text-[15px] text-ink-2">Openings open after {Math.max(0, 10 - gamesPlayed)} more bot game{10 - gamesPlayed === 1 ? '' : 's'}.</p>
+            )}
           </motion.div>
         </div>
       </div>

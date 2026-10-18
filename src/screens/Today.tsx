@@ -9,6 +9,8 @@ import { useGames } from '../store/games';
 import { useBot } from '../store/settings';
 import { useNav } from '../store/nav';
 import { useOpenings, dueLines } from '../store/openings';
+import { useUnlocks } from '../lib/useUnlocks';
+import { ratingStatus } from '../lib/rating';
 import { LEVELS, type Lesson } from '../lib/lessons';
 import { pickPuzzle, themeLabel, type Puzzle } from '../lib/puzzles';
 import { DAILY_PUZZLE_MS, currentLevel, nextLesson, weakestTheme, estimatedStrength } from '../lib/plan';
@@ -41,6 +43,7 @@ export function Today() {
   const openings = useOpenings();
   const openDue = dueLines(openings).length;
   const hasRepertoire = !!(openings.white || openings.black);
+  const openUnlocked = useUnlocks().openings;
 
   const d = today(days);
   const streak = dayStreak(days);
@@ -62,6 +65,7 @@ export function Today() {
   const weekAgo = [...rated].reverse().find((a) => a.ts <= Date.now() - WEEK)?.ratingAfter ?? 500;
   const weekDelta = Math.round(rating - weekAgo);
   const toGoal = Math.max(0, GOAL - est.elo);
+  const rs = ratingStatus(attempts);
 
   const [preview, setPreview] = useState<Preview | null>(null);
   useEffect(() => {
@@ -96,7 +100,7 @@ export function Today() {
   const sideToMove = preview?.fen.split(' ')[1] === 'b' ? 'Black' : 'White';
   const caption =
     preview?.kind === 'puzzle'
-      ? `${sideToMove} to move. ${themeLabel(theme)}, rated ${preview.puzzle.rating}.`
+      ? `${sideToMove} to move. ${themeLabel(theme)}${rs.established ? `, difficulty ${preview.puzzle.rating}` : ''}.`
       : preview?.kind === 'lesson'
         ? `From your next lesson: ${preview.lesson.title}.`
         : 'A fresh board. Play Stockfish to start.';
@@ -148,7 +152,8 @@ export function Today() {
                 highlight={done[0] && done[1] && !done[2]}
                 onClick={() => go('play')}
               />
-              {(!hasRepertoire || openDue > 0) && (
+              {/* Only once Openings is unlocked: before that the tab doesn't exist and the link would bounce back. */}
+              {openUnlocked && (!hasRepertoire || openDue > 0) && (
                 <Row
                   art={<PieceArt role="rook" size={36} />}
                   title={hasRepertoire ? `${openDue} opening line${openDue === 1 ? '' : 's'} to drill` : 'Pick your openings'}
@@ -193,12 +198,24 @@ export function Today() {
         <div className="grid gap-10 [&>*]:min-w-0 md:grid-cols-12 md:gap-12">
           <div className="md:col-span-5">
             <p className="text-[17px]">Puzzle rating</p>
-            <div className="num mt-2 text-[clamp(6rem,14vw,11rem)] font-semibold leading-[0.85]">{Math.round(rating)}</div>
+            {rs.established ? (
+              <div className="num mt-2 text-[clamp(6rem,14vw,11rem)] font-semibold leading-[0.85]">{Math.round(rating)}</div>
+            ) : (
+              <div className="num mt-2 text-[clamp(4rem,9vw,7rem)] font-semibold leading-[0.85] text-ink-2">
+                {rs.count}/{rs.need}
+              </div>
+            )}
+            {rs.established ? (
             <p className="mt-6 max-w-[36ch] text-xl leading-relaxed">
               {weekDelta > 0 ? `Up ${weekDelta} this week. ` : weekDelta < 0 ? `Down ${-weekDelta} this week. ` : ''}
               Rough estimate of your game strength: about {est.elo}
               {toGoal ? `, ${toGoal} short of ${GOAL}.` : `, past the ${GOAL} goal.`}
             </p>
+            ) : (
+              <p className="mt-6 max-w-[36ch] text-xl leading-relaxed">
+                No number yet. A rating from a handful of puzzles is noise, so it appears after {rs.need} rated puzzles.
+              </p>
+            )}
             <p className="mt-2 max-w-[40ch] text-[15px] text-ink-2">
               Puzzle rating is not a game rating, and Lichess and Chess.com ratings differ from each other too.
             </p>
@@ -207,7 +224,7 @@ export function Today() {
             </button>
           </div>
           <div className="flex flex-col justify-end md:col-span-7">
-            <Sparkline values={spark} height={200} />
+            {rs.established && <Sparkline values={spark} height={200} />}
             <dl className="mt-10 grid grid-cols-2 gap-y-8 sm:grid-cols-4">
               <Stat value={streak} label={streak === 1 ? 'day in a row' : 'days in a row'} />
               <Stat value={d.puzzles} label="puzzles today" />

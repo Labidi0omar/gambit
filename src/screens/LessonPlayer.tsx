@@ -22,6 +22,7 @@ import { Seal, PieceArt, type Role } from '../components/ui';
 import { PuzzleRunner, type RunnerState } from '../components/PuzzleRunner';
 import { pickPuzzle, type Puzzle } from '../lib/puzzles';
 import { usePuzzles } from '../store/puzzles';
+import { useRatingStatus } from '../lib/rating';
 import { useDaily } from '../store/daily';
 import { WatchFirst, LESSON_VIDEOS } from '../components/WatchFirst';
 
@@ -376,6 +377,7 @@ function ExplainStage({ lesson, onSolved }: { lesson: Lesson; onSolved: Solved }
 function DemoStage({ puzzle, n, of, onSolved }: { puzzle: Puzzle; n: number; of: number; onSolved: Solved }) {
   const [reveal, setReveal] = useState(false);
   const [state, setState] = useState<RunnerState>('setup');
+  const [missed, setMissed] = useState(0);
   const side = new Chess(puzzle.fen).turn() === 'w' ? 'Black' : 'White';
   const line = useMemo(() => {
     const c = new Chess(puzzle.fen);
@@ -392,10 +394,12 @@ function DemoStage({ puzzle, n, of, onSolved }: { puzzle: Puzzle; n: number; of:
           puzzle={puzzle}
           reveal={reveal}
           onState={setState}
+          onMiss={setMissed}
           onFinish={(ok) => onSolved(ok ? `Found it: ${line.filter((_, i) => i % 2 === 0).join(', ')}.` : `The line: ${line.join(' ')}.`)}
         />
       }
     >
+      {state === 'user' && missed > 0 && <p className="text-[17px] text-down">Not that one. Try again.</p>}
       {state === 'user' && (
         <button onClick={() => setReveal(true)} className="btn-ghost self-start">
           Show me
@@ -412,8 +416,11 @@ function PracticeStage({ lesson, onSolved }: { lesson: Lesson; onSolved: Solved 
   const [puzzle, setPuzzle] = useState<Puzzle | null | undefined>(undefined);
   const [results, setResults] = useState<boolean[]>([]);
   const [current, setCurrent] = useState<'solving' | 'done'>('solving');
+  const [missed, setMissed] = useState(0);
+  const [reveal, setReveal] = useState(false);
   const used = useRef(new Set<string>((DEMOS[lesson.id] ?? []).map((d) => d.id)));
   const started = useRef(0);
+  const established = useRatingStatus().established;
 
   const load = async () => {
     const p = await pickPuzzle(usePuzzles.getState().rating, {
@@ -422,6 +429,8 @@ function PracticeStage({ lesson, onSolved }: { lesson: Lesson; onSolved: Solved 
     }).catch(() => null);
     if (p) used.current.add(p.id);
     started.current = Date.now();
+    setMissed(0);
+    setReveal(false);
     setCurrent('solving');
     setPuzzle(p);
   };
@@ -433,7 +442,7 @@ function PracticeStage({ lesson, onSolved }: { lesson: Lesson; onSolved: Solved 
 
   if (puzzle === null && results.length)
     return (
-      <Shell text={`That's every ${practice.label.toLowerCase()} puzzle near your rating for now: ${results.filter(Boolean).length} of ${results.length} solved.`}>
+      <Shell text={`That's every ${practice.label.toLowerCase()} puzzle at your level for now: ${results.filter(Boolean).length} of ${results.length} solved.`}>
         <button onClick={() => onSolved('Practice done.')} className="btn-primary self-start">
           Finish practice
         </button>
@@ -458,13 +467,15 @@ function PracticeStage({ lesson, onSolved }: { lesson: Lesson; onSolved: Solved 
       text={
         finished
           ? `${solved} of ${practice.count} solved.`
-          : `Practice ${Math.min(results.length + (current === 'solving' ? 1 : 0), practice.count)} of ${practice.count}: ${practice.label.toLowerCase()}, rated near you.`
+          : `Practice ${Math.min(results.length + (current === 'solving' ? 1 : 0), practice.count)} of ${practice.count}: ${practice.label.toLowerCase()}, picked for your level. Only your first try counts.`
       }
       board={
         puzzle ? (
           <PuzzleRunner
             key={puzzle.id}
             puzzle={puzzle}
+            reveal={reveal}
+            onMiss={setMissed}
             onFinish={(ok) => {
               recordAttempt(puzzle, ok, false);
               logDay({ puzzles: 1, puzzleMs: Math.min(Date.now() - started.current, 3 * 60_000) });
@@ -483,7 +494,15 @@ function PracticeStage({ lesson, onSolved }: { lesson: Lesson; onSolved: Solved 
           <span key={k} className={`h-2 flex-1 ${k < results.length ? (results[k] ? 'bg-up' : 'bg-down') : 'bg-surface-2'}`} />
         ))}
       </div>
-      {puzzle && <p className="text-[15px] text-ink-2">Rated {puzzle.rating}</p>}
+      {current === 'solving' && missed > 0 && (
+        <>
+          <p className="text-[17px] text-down">Not that one. Try again.</p>
+          <button onClick={() => setReveal(true)} className="btn-ghost self-start">
+            Show solution
+          </button>
+        </>
+      )}
+      {puzzle && established && <p className="text-[15px] text-ink-2">Difficulty {puzzle.rating}</p>}
       {current === 'done' && !finished && (
         <button onClick={load} className="btn-primary self-start">
           Next puzzle

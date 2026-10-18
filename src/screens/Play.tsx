@@ -20,6 +20,9 @@ import { CctPanel, type CctPhase } from '../components/CctPanel';
 import { useLessons, levelUnlocked } from '../store/lessons';
 import { usePuzzles } from '../store/puzzles';
 import type { DrawShape } from 'chessground/draw';
+import { MoveNav, useBrowse } from '../components/MoveNav';
+
+const NO_DESTS = new Map<Key, Key[]>();
 
 const BASE_MS = 10 * 60_000;
 const INC_MS = 5_000;
@@ -72,6 +75,8 @@ export function Play() {
   const c = chess.current;
   const turn = c.turn();
   const fen = c.fen();
+  const browse = useBrowse(c, fen);
+  const bv = browse.view;
 
   const finish = useCallback(
     (r: GameResult, reason: string) => {
@@ -277,16 +282,16 @@ export function Play() {
           />
           <div className="relative">
             <Board
-              fen={fen}
+              fen={bv ? bv.fen : fen}
               orientation={orientation}
-              turnColor={turnColor(c)}
+              turnColor={bv ? bv.turnColor : turnColor(c)}
               movableColor={orientation}
-              dests={dests}
-              lastMove={lastMove}
-              check={c.inCheck()}
-              viewOnly={status !== 'playing'}
-              shapes={cctShapes}
-              highlights={cctHighlights}
+              dests={bv ? NO_DESTS : dests}
+              lastMove={bv ? bv.lastMove : lastMove}
+              check={bv ? bv.check : c.inCheck()}
+              viewOnly={!!bv || status !== 'playing'}
+              shapes={bv ? undefined : cctShapes}
+              highlights={bv ? undefined : cctHighlights}
               onSelect={onMark}
               onMove={onUserMove}
             />
@@ -310,6 +315,7 @@ export function Play() {
             </AnimatePresence>
           </div>
           <Clock ms={clocks[userSide]} active={status === 'playing' && turn === userSide} label="You" />
+          {browse.total > 0 && <MoveNav b={browse} />}
         </div>
       </div>
 

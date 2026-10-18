@@ -4,11 +4,13 @@ import type { Key } from 'chessground/types';
 import type { DrawShape } from 'chessground/draw';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Board } from '../components/Board';
+import { MoveNav, useBrowse } from '../components/MoveNav';
 import { toDests, turnColor, isPromotion } from '../lib/chess';
 import { pickPuzzle, themeLabel, THEME_LABELS, type Puzzle } from '../lib/puzzles';
 import { usePuzzles } from '../store/puzzles';
 import { useDaily } from '../store/daily';
 import { sound } from '../lib/sound';
+import { useRatingStatus } from '../lib/rating';
 import { useUnlocks } from '../lib/useUnlocks';
 import { levelUnlocked, useLessons } from '../store/lessons';
 
@@ -40,6 +42,8 @@ export function Puzzles({ theme: initialTheme, review, first }: { theme?: string
   const [reviewMode, setReviewMode] = useState(!!review);
   // Beginner support: a hint ladder below 900, and gentle feedback until Level 1.
   const open = useUnlocks();
+  const established = useRatingStatus().established;
+  const showRating = open.ratings && established;
   const completed = useLessons((s) => s.completed);
   const ladder = rating < 900;
   const gentle = !levelUnlocked(1, completed, rating);
@@ -51,6 +55,8 @@ export function Puzzles({ theme: initialTheme, review, first }: { theme?: string
   const solution = useMemo(() => puzzle?.moves.split(' ') ?? [], [puzzle]);
   const c = chess.current;
   const fen = c.fen();
+  const browse = useBrowse(c, fen);
+  const bv = browse.view;
 
   const flash = (key: Key, cls: 'flash-good' | 'flash-bad') => {
     setHighlights(new Map([[key, cls]]));
@@ -147,15 +153,22 @@ export function Puzzles({ theme: initialTheme, review, first }: { theme?: string
         setStep(nextStep + 1);
         setPhase('user');
       }, 400);
-    } else if (gentle) {
-      // Early on: no red flash, no buzzer. Explain and let them try again.
-      setMissed(true);
-      setNote(probe.inCheck() ? 'Not quite. That gives check, but look for a move that wins more.' : 'Not quite. Look for checks and captures first, then try again.');
-      rerender(); // snap the piece back
     } else {
-      flash(to, 'flash-bad');
+      // A miss never spoils the puzzle: the piece snaps back and they try again.
+      // Only a clean first try counts as solved for the rating (see finish).
+      if (!gentle) {
+        flash(to, 'flash-bad');
+        sound.wrong();
+      }
+      setMissed(true);
+      setNote(
+        gentle
+          ? probe.inCheck()
+            ? 'Not quite. That gives check, but look for a move that wins more.'
+            : 'Not quite. Look for checks and captures first, then try again.'
+          : 'Not that one. Try again.',
+      );
       rerender(); // snap the piece back
-      finish(false);
     }
   };
 
@@ -175,10 +188,20 @@ export function Puzzles({ theme: initialTheme, review, first }: { theme?: string
   const hintShapes: DrawShape[] = expectedNow && hint >= 3 ? [{ orig: sq(expectedNow)[0], dest: sq(expectedNow)[1], brush: 'green' }] : [];
   const hintHighlights = expectedNow && hint >= 2 ? new Map<Key, string>([[sq(expectedNow)[0], 'hint']]) : null;
 
+  // Where the user gave up, so "Replay solution" can run the line again from there.
+  const gaveUpAt = useRef({ fen: '', step: 0 });
+  const giveUp = () => {
+    gaveUpAt.current = { fen: chess.current.fen(), step };
+    finish(false);
+    showSolution();
+  };
+
   const showSolution = () => {
     const t = token.current;
+    chess.current = new Chess(gaveUpAt.current.fen);
+    rerender();
     setPhase('showing');
-    const rest = solution.slice(step);
+    const rest = solution.slice(gaveUpAt.current.step);
     rest.forEach((uci, i) => {
       setTimeout(() => {
         if (t !== token.current) return;
@@ -192,11 +215,12 @@ export function Puzzles({ theme: initialTheme, review, first }: { theme?: string
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.key === 'Enter' || e.key === 'ArrowRight') && (phase === 'solved' || phase === 'failed')) next();
+      // ArrowRight steps through moves first (MoveNav); only at the live position does it go on.
+      if ((e.key === 'Enter' || (e.key === 'ArrowRight' && !bv)) && (phase === 'solved' || phase === 'failed')) next();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [phase, next]);
+  }, [phase, next, bv]);
 
   const userColor = puzzle ? (new Chess(puzzle.fen).turn() === 'w' ? 'black' : 'white') : 'white';
   const dests = phase === 'user' ? toDests(c) : new Map<Key, Key[]>();
@@ -213,20 +237,20 @@ export function Puzzles({ theme: initialTheme, review, first }: { theme?: string
                 ? 'Loading…'
                 : `${userColor === 'white' ? 'White' : 'Black'} to move${isReview ? ' · review' : ''}`}
           </span>
-          {puzzle && done && open.ratings && <span className="num text-zinc-500">#{puzzle.id} &middot; {puzzle.rating}</span>}
+          {puzzle && done && showRating && <span className="num text-zinc-500">#{puzzle.id} &middot; {puzzle.rating}</span>}
         </div>
         <div className="relative">
           <Board
-            fen={fen}
+            fen={bv ? bv.fen : fen}
             orientation={userColor}
-            turnColor={turnColor(c)}
+            turnColor={bv ? bv.turnColor : turnColor(c)}
             movableColor={userColor}
-            dests={dests}
-            lastMove={lastMove}
-            check={c.inCheck()}
-            viewOnly={phase !== 'user'}
-            highlights={hintHighlights && !highlights.size ? hintHighlights : highlights}
-            shapes={hintShapes.length ? hintShapes : shapes}
+            dests={bv ? new Map() : dests}
+            lastMove={bv ? bv.lastMove : lastMove}
+            check={bv ? bv.check : c.inCheck()}
+            viewOnly={!!bv || phase !== 'user'}
+            highlights={bv ? undefined : hintHighlights && !highlights.size ? hintHighlights : highlights}
+            shapes={bv ? undefined : hintShapes.length ? hintShapes : shapes}
             onMove={(from, to) => onUserMove(from, to)}
           />
           {phase === 'empty' && (
@@ -238,6 +262,11 @@ export function Puzzles({ theme: initialTheme, review, first }: { theme?: string
             </div>
           )}
         </div>
+        {browse.total > 0 && phase !== 'showing' && (
+          <div className="mt-2">
+            <MoveNav b={browse} />
+          </div>
+        )}
       </div>
 
       <aside className="flex flex-col gap-4">
@@ -245,16 +274,23 @@ export function Puzzles({ theme: initialTheme, review, first }: { theme?: string
           <div className="flex flex-col gap-3 bg-surface-2 px-5 py-4">
             {hint >= 1 && <p className="text-[17px]">Look for checks first, then captures, then threats.</p>}
             {note && <p className="text-[17px] text-ink-2">{note}</p>}
-            {ladder && hint < 4 && (
-              <button onClick={nextHint} className="btn-ghost self-start">
-                {HINT_TEXT[hint]}
-              </button>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {ladder && hint < 4 && (
+                <button onClick={nextHint} className="btn-ghost">
+                  {HINT_TEXT[hint]}
+                </button>
+              )}
+              {missed && (
+                <button onClick={giveUp} className="btn-ghost">
+                  Show solution
+                </button>
+              )}
+            </div>
           </div>
         )}
 
-        <div className={`card-hero grid gap-4 p-6 ${open.ratings ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          <div className={open.ratings ? '' : 'hidden'}>
+        <div className={`card-hero grid gap-4 p-6 ${showRating ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <div className={showRating ? '' : 'hidden'}>
             <div className="label !text-zinc-400">Puzzle rating</div>
             <div className="flex items-baseline gap-2">
               <span className="num text-5xl font-bold">{Math.round(rating)}</span>
@@ -308,7 +344,7 @@ export function Puzzles({ theme: initialTheme, review, first }: { theme?: string
               <div className="flex gap-2">
                 {phase === 'failed' && (
                   <button onClick={showSolution} className="btn-ghost flex-1">
-                    Show solution
+                    Replay solution
                   </button>
                 )}
                 <button

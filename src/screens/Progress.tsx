@@ -7,6 +7,7 @@ import { useNav } from '../store/nav';
 import { LEVELS } from '../lib/lessons';
 import { themeLabel } from '../lib/puzzles';
 import { estimatedStrength } from '../lib/plan';
+import { ratingStatus } from '../lib/rating';
 import { motion } from 'framer-motion';
 import { rise } from '../components/ui';
 import { blunderStep, useCctStats, CCT_KINDS, type CctKind } from '../lib/cct';
@@ -29,7 +30,8 @@ export function Progress() {
     l: games.filter((g) => g.result === 'loss').length,
   };
 
-  const pct = Math.min(100, (est.elo / GOAL) * 100);
+  const rs = ratingStatus(attempts);
+  const pct = rs.established ? Math.min(100, (est.elo / GOAL) * 100) : 0;
 
   // Which CCT step each of your blunders skipped, across reviewed games.
   const cct = useCctStats();
@@ -51,23 +53,36 @@ export function Progress() {
     <div className="mx-auto w-full max-w-[1240px] px-4 md:px-8">
       <section className="grid gap-8 pb-14 pt-6 [&>*]:min-w-0 md:grid-cols-12 md:pb-20 md:pt-12">
         <motion.h1 {...rise(0)} className="display-xl md:col-span-7">
-          Roughly {est.elo} in games.
+          {rs.established ? `Roughly ${est.elo} in games.` : 'No rating yet.'}
         </motion.h1>
         <motion.p {...rise(1)} className="max-w-[40ch] self-end text-xl leading-relaxed md:col-span-5">
-          A rough estimate from {est.basis === 'puzzles' ? 'your puzzles' : 'your bot games and puzzles'}: puzzle rating is not a game rating, and
-          Lichess and Chess.com ratings differ from each other too. Puzzle rating {Math.round(rating)}, give or take {Math.round(rd)}. {record.w} wins, {record.d} draws and {record.l} losses against the bot.{' '}
+          {rs.established ? (
+            <>
+              A rough estimate from {est.basis === 'puzzles' ? 'your puzzles' : 'your bot games and puzzles'}: puzzle rating is not a game rating, and
+              Lichess and Chess.com ratings differ from each other too. Puzzle rating {Math.round(rating)}, give or take {Math.round(rd)}.{' '}
+            </>
+          ) : (
+            <>
+              {rs.count} of {rs.need} rated puzzles done. A number from fewer is noise, so it stays hidden until then.{' '}
+            </>
+          )}
+          {record.w} wins, {record.d} draws and {record.l} losses against the bot.{' '}
           {streak ? `${streak} ${streak === 1 ? 'day' : 'days'} in a row` : 'No streak running'}, best {bestDayStreak(days)}. Longest puzzle run: {bestStreak}.
         </motion.p>
       </section>
 
-      <motion.section {...rise(2)} className="pb-16 md:pb-24">
+      {rs.established && <motion.section {...rise(2)} className="pb-16 md:pb-24">
         <h2 className="display-m mb-6">Puzzle rating over time</h2>
         <RatingChart points={attempts.filter((a) => !a.review).map((a) => ({ ts: a.ts, r: a.ratingAfter }))} />
-      </motion.section>
+      </motion.section>}
 
       <section className="pb-16 md:pb-24">
         <h2 className="display-m mb-2">The road to {GOAL}</h2>
-        <p className="mb-6 text-[17px] text-ink-2">Estimated from {est.basis === 'puzzles' ? 'your puzzles' : 'your games and puzzles'}.</p>
+        <p className="mb-6 text-[17px] text-ink-2">
+          {rs.established
+            ? `Estimated from ${est.basis === 'puzzles' ? 'your puzzles' : 'your games and puzzles'}.`
+            : `Fills in after ${rs.need} rated puzzles.`}
+        </p>
         <div className="relative grid h-14 grid-cols-12 gap-[2px]">
           {LEVELS.map((l, i) => (
             <div key={l.level} className={`relative bg-surface-2 ${i === 0 ? 'col-span-6' : 'col-span-3'}`}>
