@@ -1,4 +1,6 @@
 node_modules
 dist
-data
-public/stockfish
+# The full Lichess puzzle database (307 MB) is too big for git: it's attached to the GitHub
+# release instead. Everything else in data/ (the opening tables) is committed.
+data/*.zst
+data/*.csv
