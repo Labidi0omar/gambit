@@ -5,7 +5,8 @@ import type { DrawShape } from 'chessground/draw';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Board } from '../components/Board';
 import { toDests, isPromotion } from '../lib/chess';
-import { analyzeGame, positions, formatEval, whitePov, type Position } from '../lib/review';
+import { analyzeGame, positions, formatEval, whitePov, REVIEW_DEPTH, type Position } from '../lib/review';
+import { explainLine, compareLines, playLine, type LineStep } from '../lib/explain';
 import { themeLabel } from '../lib/puzzles';
 import { getEngine, FULL_STRENGTH } from '../engine/stockfish';
 import { useGames, type GameRecord, type GameAnalysis } from '../store/games';
@@ -13,7 +14,7 @@ import { usePuzzles } from '../store/puzzles';
 import { useNav } from '../store/nav';
 import { sound } from '../lib/sound';
 import { useUnlocks } from '../lib/useUnlocks';
-import { blunderStep, CCT_LABEL, type CctKind } from '../lib/cct';
+import { blunderStep, CCT_LABEL } from '../lib/cct';
 
 const NO_DESTS = new Map<Key, Key[]>();
 const PRACTICE_TOLERANCE = 50; // a move within half a pawn of best counts as found
@@ -109,6 +110,8 @@ function GameReview({ game }: { game: GameRecord }) {
   const [attempt, setAttempt] = useState(0);
   const [cur, setCur] = useState(0);
   const [practice, setPractice] = useState(false);
+  const [sel, setSel] = useState(0);
+  const [line, setLine] = useState<ShownLine | null>(null);
   const orientation = game.userColor === 'w' ? 'white' : 'black';
   const isUserPly = (i: number) => pos[i].fen.split(' ')[1] === game.userColor;
 
@@ -131,12 +134,16 @@ function GameReview({ game }: { game: GameRecord }) {
   useEffect(() => {
     if (practice) return;
     const k = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') setCur((c) => Math.max(0, c - 1));
-      if (e.key === 'ArrowRight') setCur((c) => Math.min(pos.length - 1, c + 1));
+      if (e.key === 'Escape') return setLine(null);
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const d = e.key === 'ArrowLeft' ? -1 : 1;
+      // While a line is shown, the arrows step through it; otherwise through the game.
+      if (line) return setLine({ ...line, n: Math.max(0, Math.min(line.steps.length - 1, line.n + d)) });
+      setCur((c) => Math.max(0, Math.min(pos.length - 1, c + d)));
     };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
-  }, [pos.length, practice]);
+  }, [pos.length, practice, line]);
 
   const userFlags = a ? a.flags.map((f, i) => (f && isUserPly(i) ? i : -1)).filter((i) => i >= 0) : [];
   const counts = {
@@ -144,50 +151,82 @@ function GameReview({ game }: { game: GameRecord }) {
     mistake: userFlags.filter((i) => a!.flags[i] === 'mistake').length,
   };
   const missed = a ? [...new Set(userFlags.map((i) => a.themes[i]).filter(Boolean) as string[])] : [];
-  const steps = a
-    ? userFlags
-        .filter((i) => a.flags[i] === 'blunder')
-        .map((i) => blunderStep(pos[i + 1].fen, a.best[i + 1]))
-        .filter(Boolean) as CctKind[]
-    : [];
-  const stepCounts = (['check', 'capture', 'threat'] as CctKind[]).map((k) => [k, steps.filter((x) => x === k).length] as const).filter(([, n]) => n);
 
-  if (practice && a) return <Practice game={game} a={a} pos={pos} plies={userFlags} onExit={() => setPractice(false)} />;
+  // Open on the first mistake once the analysis is in: that's what you came here for.
+  const opened = useRef(false);
+  useEffect(() => {
+    if (opened.current || !a) return;
+    opened.current = true;
+    if (userFlags.length) setCur(userFlags[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [a]);
 
-  // Arrows at the current position: the move played (blue) and, if it was bad, the best move (green).
+  const pickMistake = (k: number) => {
+    setSel(k);
+    setCur(userFlags[k]);
+    setLine(null);
+  };
+  const browse = (to: number) => {
+    setCur(to);
+    setLine(null);
+  };
+
+  if (practice && a) return <Practice game={game} a={a} pos={pos} plies={userFlags} start={sel} onExit={() => setPractice(false)} />;
+
+  // Arrows at the current position: the move played (yellow, red if it was a mistake) and the better move (green).
   const shapes: DrawShape[] = [];
   if (cur < pos.length - 1 && pos[cur].uci) {
-    shapes.push(arrow(pos[cur].uci!, 'yellow'));
+    shapes.push(arrow(pos[cur].uci!, a?.flags[cur] ? 'red' : 'yellow'));
     if (a?.flags[cur] && a.best[cur]) shapes.push(arrow(a.best[cur], 'green'));
   }
-  const last = cur > 0 ? pos[cur - 1].uci : undefined;
+  const lastUci = cur > 0 ? pos[cur - 1].uci : undefined;
+  const ls = line ? line.steps[line.n] : null;
+  const lineNext = line ? line.steps[line.n + 1] : null;
+  const shownUci = ls ? ls.uci : lastUci;
+  const last = shownUci ? ([shownUci.slice(0, 2), shownUci.slice(2, 4)] as [Key, Key]) : undefined;
+  const boardFen = ls ? ls.fen : pos[cur].fen;
+  const lineShapes = lineNext ? [arrow(lineNext.uci, line!.which === 'best' ? 'green' : 'red')] : [];
+  // The four buttons under the board step through the line when one is shown, else the game.
+  const navTo = (to: number) => (line ? setLine({ ...line, n: to }) : browse(to));
+  const navMax = line ? line.steps.length - 1 : pos.length - 1;
+  const navCur = line ? line.n : cur;
 
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-4 px-4 pb-8 pt-4 md:grid-cols-[minmax(0,1fr)_340px] md:gap-8 md:px-8 md:pt-10">
       <div className="mx-auto flex w-full max-w-[min(100%,calc(100dvh-12rem))] flex-col gap-3">
         <Board
-          fen={pos[cur].fen}
+          fen={boardFen}
           orientation={orientation}
-          turnColor={pos[cur].fen.split(' ')[1] === 'w' ? 'white' : 'black'}
+          turnColor={boardFen.split(' ')[1] === 'w' ? 'white' : 'black'}
           dests={NO_DESTS}
           viewOnly
-          lastMove={last ? [last.slice(0, 2) as Key, last.slice(2, 4) as Key] : undefined}
-          check={new Chess(pos[cur].fen).inCheck()}
-          shapes={shapes}
+          lastMove={last}
+          check={new Chess(boardFen).inCheck()}
+          shapes={line ? lineShapes : shapes}
         />
+        {line && (
+          <div className="flex items-center justify-between gap-3 bg-surface-2 px-4 py-2 text-[15px]">
+            <span>
+              {line.which === 'best' ? 'Better line' : "The bot's best answer"}: move {line.n + 1} of {line.steps.length}
+            </span>
+            <button onClick={() => setLine(null)} className="link shrink-0">
+              Back to the game
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           {[
-            ['⏮', 0],
-            ['◀', Math.max(0, cur - 1)],
-            ['▶', Math.min(pos.length - 1, cur + 1)],
-            ['⏭', pos.length - 1],
+            ['⏮︎', 0],
+            ['◀︎', Math.max(0, navCur - 1)],
+            ['▶︎', Math.min(navMax, navCur + 1)],
+            ['⏭︎', navMax],
           ].map(([label, to]) => (
-            <button key={label} onClick={() => setCur(to as number)} className="glass flex-1 py-2 text-sm hover:bg-white/10">
+            <button key={label} onClick={() => navTo(to as number)} className="glass flex-1 py-2 text-sm hover:bg-white/10">
               {label}
             </button>
           ))}
         </div>
-        {a && <EvalGraph a={a} cur={cur} onPick={setCur} userColor={game.userColor} />}
+        {a && <EvalGraph a={a} cur={cur} onPick={browse} userColor={game.userColor} />}
       </div>
 
       <aside className="flex flex-col gap-4">
@@ -221,54 +260,38 @@ function GameReview({ game }: { game: GameRecord }) {
             </div>
           ) : (
             <>
-              <div className={`mt-4 grid gap-2 text-center ${showEval ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                <Stat n={counts.blunder} label="Blunders" cls="text-down" />
-                <Stat n={counts.mistake} label="Mistakes" cls="text-amber-400" />
-                {showEval && <Stat n={formatEval(a.evals[cur])} label="Eval" cls="text-zinc-100" />}
-              </div>
-              {stepCounts.length > 0 && (
-                <p className="mt-4 text-[15px]">
-                  <span className="text-ink-2">Blunders came from: </span>
-                  {stepCounts.map(([k, n]) => `${n} ${CCT_LABEL[k]}${n === 1 ? '' : 's'}`).join(', ')}
-                </p>
+              <p className="mt-4 font-display text-2xl font-semibold leading-tight">
+                {userFlags.length
+                  ? [counts.blunder && `${counts.blunder} blunder${counts.blunder === 1 ? '' : 's'}`, counts.mistake && `${counts.mistake} mistake${counts.mistake === 1 ? '' : 's'}`]
+                      .filter(Boolean)
+                      .join(' and ')
+                  : 'No blunders or mistakes. Clean game.'}
+              </p>
+              {userFlags.length > 0 && (
+                <p className="mt-2 text-[15px] text-ink-2">Each one is explained below, with the line that should have happened. They also come back in your puzzle reviews.</p>
               )}
+              {showEval && <p className="mt-3 text-[15px] text-ink-2">Eval here: <span className="num text-ink">{formatEval(a.evals[cur])}</span></p>}
               {missed.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-1.5">
+                <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[15px] text-ink-2">Practice:</span>
                   {missed.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => go('puzzles', { puzzleTheme: t })}
-                      className="chip hover:bg-surface-3"
-                      title="Practice this theme"
-                    >
+                    <button key={t} onClick={() => go('puzzles', { puzzleTheme: t })} className="chip hover:bg-surface-3">
                       {themeLabel(t)} &rarr;
                     </button>
                   ))}
                 </div>
               )}
-              <button
-                disabled={!userFlags.length}
-                onClick={() => setPractice(true)}
-                className="btn-accent mt-4 w-full"
-              >
-                {userFlags.length ? `Find the better move (${userFlags.length})` : 'No mistakes to practice'}
-              </button>
-              {userFlags.length > 0 && <p className="mt-2 text-xs text-zinc-500">These positions were also added to your puzzle reviews.</p>}
             </>
           )}
         </div>
 
-        <MoveList pos={pos} a={a} cur={cur} onPick={setCur} isUserPly={isUserPly} />
-      </aside>
-    </div>
-  );
-}
+        {a && userFlags.length > 0 && (
+          <MistakeCoach a={a} pos={pos} plies={userFlags} k={sel} onPick={pickMistake} line={line} onLine={setLine} onPractice={() => setPractice(true)} />
+        )}
 
-function Stat({ n, label, cls }: { n: number | string; label: string; cls: string }) {
-  return (
-    <div className="rounded-2xl bg-white/[0.04] py-3">
-      <div className={`num text-lg font-semibold ${cls}`}>{n}</div>
-      <div className="text-sm text-ink-2">{label}</div>
+        <h2 className="mt-2 text-[13px] font-semibold uppercase tracking-wider text-ink-2">Whole game</h2>
+        <MoveList pos={pos} a={a} cur={cur} onPick={browse} isUserPly={isUserPly} />
+      </aside>
     </div>
   );
 }
@@ -366,10 +389,24 @@ function EvalGraph({ a, cur, onPick, userColor }: { a: GameAnalysis; cur: number
 
 // ---------- blunder practice: "find the better move" ----------
 
-function Practice({ game, a, pos, plies, onExit }: { game: GameRecord; a: GameAnalysis; pos: Position[]; plies: number[]; onExit: () => void }) {
-  const [k, setK] = useState(0);
+function Practice({
+  game,
+  a,
+  pos,
+  plies,
+  start = 0,
+  onExit,
+}: {
+  game: GameRecord;
+  a: GameAnalysis;
+  pos: Position[];
+  plies: number[];
+  start?: number;
+  onExit: () => void;
+}) {
+  const [k, setK] = useState(start);
   const [state, setState] = useState<'move' | 'checking' | 'right' | 'wrong' | 'shown'>('move');
-  const [fen, setFen] = useState(pos[plies[0]].fen);
+  const [fen, setFen] = useState(pos[plies[start]].fen);
   const [last, setLast] = useState<[Key, Key]>();
   const [msg, setMsg] = useState('');
   const [solved, setSolved] = useState(0);
@@ -519,4 +556,166 @@ function sanOf(fen: string, uci: string) {
   } catch {
     return uci;
   }
+}
+
+// ---------- mistake coach: what went wrong, what was better, and the line ----------
+
+/** A line shown on the board instead of the game: the better move, or the punishment. */
+export interface ShownLine {
+  which: 'best' | 'punish';
+  steps: LineStep[];
+  n: number;
+}
+
+const lineCache = new Map<string, Promise<{ pv: string[]; mate: number | null }>>();
+/** Best line from a position at review depth, computed once per position. */
+function bestLine(fen: string) {
+  let p = lineCache.get(fen);
+  if (!p) {
+    p = getEngine()
+      .analyze(fen, REVIEW_DEPTH)
+      .then((r) => ({ pv: r.pv.length ? r.pv : [r.best], mate: r.mate }));
+    p.catch(() => lineCache.delete(fen));
+    lineCache.set(fen, p);
+  }
+  return p;
+}
+
+function MistakeCoach({
+  a,
+  pos,
+  plies,
+  k,
+  onPick,
+  line,
+  onLine,
+  onPractice,
+}: {
+  a: GameAnalysis;
+  pos: Position[];
+  plies: number[];
+  k: number;
+  onPick: (k: number) => void;
+  line: ShownLine | null;
+  onLine: (l: ShownLine | null) => void;
+  onPractice: () => void;
+}) {
+  const i = plies[k];
+  const ended = new Chess(pos[i + 1].fen).isGameOver();
+  const [lines, setLines] = useState<{ best: LineStep[]; bestText: string; punish: LineStep[]; punishText: string } | null>(null);
+  const [failed, setFailed] = useState(false);
+  const bot = 'the bot';
+
+  useEffect(() => {
+    let live = true;
+    setLines(null);
+    setFailed(false);
+    Promise.all([bestLine(pos[i].fen), ended ? Promise.resolve({ pv: [], mate: null }) : bestLine(pos[i + 1].fen)])
+      .then(([b, p]) => {
+        if (!live) return;
+        setLines({
+          best: playLine(pos[i].fen, b.pv),
+          bestText: [
+            explainLine(pos[i].fen, b.pv, b.mate, 'you'),
+            ended ? '' : compareLines(pos[i].fen, b.pv, [pos[i].uci!, ...p.pv], p.mate !== null && p.mate > 0),
+          ]
+            .filter(Boolean)
+            .join(' '),
+          punish: playLine(pos[i + 1].fen, p.pv),
+          punishText: p.pv.length ? explainLine(pos[i + 1].fen, p.pv, p.mate, bot) : '',
+        });
+      })
+      .catch(() => live && setFailed(true));
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i]);
+
+  // Show a line on the board; the buttons under the board then step through it.
+  const show = (which: 'best' | 'punish', n: number) => {
+    const steps = which === 'best' ? lines!.best : lines!.punish;
+    onLine({ which, steps, n });
+    document.querySelector('.board-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+  const step = line;
+
+  const flag = a.flags[i];
+  const moveNo = `${Math.floor(i / 2) + 1}${pos[i].fen.split(' ')[1] === 'w' ? '.' : '...'}`;
+  const bestSan = lines?.best[0]?.san ?? sanOf(pos[i].fen, a.best[i]);
+
+  const Line = ({ which, l }: { which: 'best' | 'punish'; l: LineStep[] }) => (
+    <div className="flex flex-col gap-2">
+      <div className="num flex flex-wrap gap-x-1 gap-y-1 text-[15px]">
+        {l.map((s, n) => (
+          <button
+            key={n}
+            onClick={() => show(which, n)}
+            className={`px-1 ${step?.which === which && step.n === n ? 'bg-accent text-black' : 'hover:bg-surface-3'}`}
+          >
+            {s.label && <span className="text-ink-2">{s.label} </span>}
+            {s.san}
+          </button>
+        ))}
+      </div>
+      <button className="btn-ghost self-start !py-2" onClick={() => show(which, 0)}>
+        Show it on the board
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-5 bg-surface-2 p-5">
+      <div className="flex items-center justify-between text-[15px] text-ink-2">
+        <span>
+          Mistake {k + 1} of {plies.length}
+        </span>
+        <span className="flex gap-1">
+          <button className="btn-ghost !px-3 !py-1" disabled={k === 0} onClick={() => onPick(k - 1)} aria-label="Previous mistake">
+            {'◀︎'}
+          </button>
+          <button className="btn-ghost !px-3 !py-1" disabled={k + 1 >= plies.length} onClick={() => onPick(k + 1)} aria-label="Next mistake">
+            {'▶︎'}
+          </button>
+        </span>
+      </div>
+
+      <p className="font-display text-2xl font-semibold leading-tight">
+        {moveNo} You played <span className={flag === 'blunder' ? 'text-down' : 'text-amber-400'}>{pos[i].san}{flag === 'blunder' ? '??' : '?'}</span>
+      </p>
+
+      {failed ? (
+        <p className="text-[15px] text-ink-2">The engine didn't load, so the explanation isn't available. The red arrow is your move, the green one was better.</p>
+      ) : !lines ? (
+        <p className="text-[15px] text-ink-2">Working out the lines&hellip;</p>
+      ) : (
+        <>
+          {lines.punishText && (
+            <section className="flex flex-col gap-2">
+              <h3 className="text-[13px] font-semibold uppercase tracking-wider text-down">What went wrong</h3>
+              <p className="text-[17px] leading-relaxed">After {pos[i].san}, {lines.punishText}</p>
+              <Line which="punish" l={lines.punish} />
+            </section>
+          )}
+          <section className="flex flex-col gap-2">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wider text-up">Better was {bestSan}</h3>
+            <p className="text-[17px] leading-relaxed">{lines.bestText}</p>
+            <Line which="best" l={lines.best} />
+          </section>
+        </>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          className="btn-ghost flex-1"
+          onClick={() => onLine(null)}
+        >
+          Back to the game
+        </button>
+        <button className="btn-primary flex-1" onClick={onPractice}>
+          Try it yourself
+        </button>
+      </div>
+    </div>
+  );
 }

@@ -63,7 +63,12 @@ export function Board(p: BoardProps) {
   useEffect(() => {
     const a = api.current;
     if (!a) return;
-    a.set(config());
+    const cfg = config();
+    // Setting a fen wipes the user's right-click arrows, and this runs on every render (the game
+    // clock re-renders 10x a second). Only send it when the board really differs: a new position,
+    // or a rejected move that has to snap back.
+    if (a.getFen() === p.fen.split(' ')[0]) delete cfg.fen;
+    a.set(cfg);
     // set() deep-merges and skips Map contents, so assign custom highlights directly.
     a.state.highlight.custom = p.highlights ?? new Map();
     a.state.dom.redraw();
