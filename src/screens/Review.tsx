@@ -311,7 +311,14 @@ function MoveList({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    ref.current?.querySelector('[data-cur="true"]')?.scrollIntoView({ block: 'nearest' });
+    // Scroll the list box only. scrollIntoView would also scroll the page down to the list,
+    // pushing the board off screen every time the move changes.
+    const box = ref.current;
+    const el = box?.querySelector<HTMLElement>('[data-cur="true"]');
+    if (!box || !el) return;
+    const top = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+    if (top < box.scrollTop) box.scrollTop = top;
+    else if (top + el.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = top + el.offsetHeight - box.clientHeight;
   }, [cur]);
   const plies = pos.slice(0, -1);
   const white0 = pos[0].fen.split(' ')[1] === 'w';
