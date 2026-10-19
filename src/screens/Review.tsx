@@ -2,19 +2,18 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Chess } from 'chess.js';
 import type { Key } from 'chessground/types';
 import type { DrawShape } from 'chessground/draw';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Board } from '../components/Board';
 import { toDests, isPromotion } from '../lib/chess';
 import { analyzeGame, positions, formatEval, whitePov, REVIEW_DEPTH, type Position } from '../lib/review';
 import { explainLine, compareLines, playLine, type LineStep } from '../lib/explain';
 import { themeLabel } from '../lib/puzzles';
-import { getEngine, FULL_STRENGTH } from '../engine/stockfish';
+import { getEngine } from '../engine/stockfish';
 import { useGames, type GameRecord, type GameAnalysis } from '../store/games';
 import { usePuzzles } from '../store/puzzles';
 import { useNav } from '../store/nav';
 import { sound } from '../lib/sound';
 import { useUnlocks } from '../lib/useUnlocks';
-import { blunderStep, CCT_LABEL } from '../lib/cct';
 
 const NO_DESTS = new Map<Key, Key[]>();
 const PRACTICE_TOLERANCE = 50; // a move within half a pawn of best counts as found
@@ -109,8 +108,12 @@ function GameReview({ game }: { game: GameRecord }) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [cur, setCur] = useState(0);
-  const [practice, setPractice] = useState(false);
   const [sel, setSel] = useState(0);
+  // Per mistake (ply): found the better move yourself, or asked to be shown. Until then it's a puzzle.
+  const [outcome, setOutcome] = useState<Record<number, 'found' | 'shown'>>({});
+  const [attemptView, setAttemptView] = useState<{ fen: string; last: [Key, Key] } | null>(null);
+  const [tryMsg, setTryMsg] = useState<{ text: string; tone: 'bad' | 'good' | 'wait' } | null>(null);
+  const tryToken = useRef(0);
   const [line, setLine] = useState<ShownLine | null>(null);
   const orientation = game.userColor === 'w' ? 'white' : 'black';
   const isUserPly = (i: number) => pos[i].fen.split(' ')[1] === game.userColor;
@@ -132,7 +135,6 @@ function GameReview({ game }: { game: GameRecord }) {
   }, [attempt]);
 
   useEffect(() => {
-    if (practice) return;
     const k = (e: KeyboardEvent) => {
       if (e.key === 'Escape') return setLine(null);
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
@@ -143,7 +145,7 @@ function GameReview({ game }: { game: GameRecord }) {
     };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
-  }, [pos.length, practice, line]);
+  }, [pos.length, line]);
 
   const userFlags = a ? a.flags.map((f, i) => (f && isUserPly(i) ? i : -1)).filter((i) => i >= 0) : [];
   const counts = {
@@ -161,30 +163,79 @@ function GameReview({ game }: { game: GameRecord }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [a]);
 
+  const resetTry = () => {
+    tryToken.current++;
+    setAttemptView(null);
+    setTryMsg(null);
+  };
   const pickMistake = (k: number) => {
     setSel(k);
     setCur(userFlags[k]);
     setLine(null);
+    resetTry();
   };
   const browse = (to: number) => {
     setCur(to);
     setLine(null);
+    resetTry();
   };
 
-  if (practice && a) return <Practice game={game} a={a} pos={pos} plies={userFlags} start={sel} onExit={() => setPractice(false)} />;
+  // On an unsolved mistake the board is a puzzle: find a better move than the one you played.
+  const trying = !!a && !line && userFlags.includes(cur) && !outcome[cur];
+  const canTry = trying && !attemptView && tryMsg?.tone !== 'wait';
 
-  // Arrows at the current position: the move played (yellow, red if it was a mistake) and the better move (green).
+  const onTryMove = async (from: Key, to: Key) => {
+    if (!a || !canTry) return;
+    const i = cur;
+    const c = new Chess(pos[i].fen);
+    let mv;
+    try {
+      mv = c.move({ from, to, promotion: isPromotion(c, from, to) ? (a.best[i][4] ?? 'q') : undefined });
+    } catch {
+      return setAttemptView(null);
+    }
+    const t = ++tryToken.current;
+    const uci = mv.from + mv.to + (mv.promotion ?? '');
+    setAttemptView({ fen: c.fen(), last: [from, to] });
+    const retry = (text: string) => {
+      sound.wrong();
+      setTryMsg({ text, tone: 'bad' });
+      setTimeout(() => t === tryToken.current && setAttemptView(null), 900);
+    };
+    if (uci === pos[i].uci) return retry("That's the move you played. Look for a better one.");
+    let good = uci === a.best[i] || c.isCheckmate();
+    if (!good) {
+      setTryMsg({ text: 'Checking with Stockfish…', tone: 'wait' });
+      try {
+        const r = await getEngine().analyze(c.fen(), 12);
+        if (t !== tryToken.current) return;
+        const pov = game.userColor === 'w' ? 1 : -1;
+        const cl = (x: number) => Math.max(-1000, Math.min(1000, x));
+        good = cl(pov * a.evals[i]) - cl(pov * whitePov(c.fen(), r)) <= PRACTICE_TOLERANCE;
+      } catch {
+        return retry("Couldn't check that move (the engine didn't load). Try the move again or press Show me.");
+      }
+    }
+    if (!good) return retry(`${mv.san} isn't better. Try again.`);
+    sound.correct();
+    setTryMsg({ text: uci === a.best[i] ? `${mv.san}! That's the best move.` : `${mv.san} works too. Stockfish's first choice was ${sanOf(pos[i].fen, a.best[i])}.`, tone: 'good' });
+    setOutcome((o) => ({ ...o, [i]: 'found' }));
+    setAttemptView(null);
+  };
+
+  // Arrows at the current position: the move played (yellow, red if it was a mistake) and, once
+  // the mistake is solved or shown, the better move (green).
   const shapes: DrawShape[] = [];
-  if (cur < pos.length - 1 && pos[cur].uci) {
+  if (cur < pos.length - 1 && pos[cur].uci && !attemptView) {
     shapes.push(arrow(pos[cur].uci!, a?.flags[cur] ? 'red' : 'yellow'));
-    if (a?.flags[cur] && a.best[cur]) shapes.push(arrow(a.best[cur], 'green'));
+    if (a?.flags[cur] && a.best[cur] && !trying) shapes.push(arrow(a.best[cur], 'green'));
   }
   const lastUci = cur > 0 ? pos[cur - 1].uci : undefined;
   const ls = line ? line.steps[line.n] : null;
   const lineNext = line ? line.steps[line.n + 1] : null;
   const shownUci = ls ? ls.uci : lastUci;
-  const last = shownUci ? ([shownUci.slice(0, 2), shownUci.slice(2, 4)] as [Key, Key]) : undefined;
-  const boardFen = ls ? ls.fen : pos[cur].fen;
+  const last = attemptView ? attemptView.last : shownUci ? ([shownUci.slice(0, 2), shownUci.slice(2, 4)] as [Key, Key]) : undefined;
+  const boardFen = ls ? ls.fen : attemptView ? attemptView.fen : pos[cur].fen;
   const lineShapes = lineNext ? [arrow(lineNext.uci, line!.which === 'best' ? 'green' : 'red')] : [];
   // The four buttons under the board step through the line when one is shown, else the game.
   const navTo = (to: number) => (line ? setLine({ ...line, n: to }) : browse(to));
@@ -198,11 +249,13 @@ function GameReview({ game }: { game: GameRecord }) {
           fen={boardFen}
           orientation={orientation}
           turnColor={boardFen.split(' ')[1] === 'w' ? 'white' : 'black'}
-          dests={NO_DESTS}
-          viewOnly
+          movableColor={orientation}
+          dests={canTry ? toDests(new Chess(pos[cur].fen)) : NO_DESTS}
+          viewOnly={!canTry}
           lastMove={last}
           check={new Chess(boardFen).inCheck()}
           shapes={line ? lineShapes : shapes}
+          onMove={onTryMove}
         />
         {line && (
           <div className="flex items-center justify-between gap-3 bg-surface-2 px-4 py-2 text-[15px]">
@@ -268,7 +321,7 @@ function GameReview({ game }: { game: GameRecord }) {
                   : 'No blunders or mistakes. Clean game.'}
               </p>
               {userFlags.length > 0 && (
-                <p className="mt-2 text-[15px] text-ink-2">Each one is explained below, with the line that should have happened. They also come back in your puzzle reviews.</p>
+                <p className="mt-2 text-[15px] text-ink-2">For each one, find the better move on the board first. Then see why it works and the line that should have happened.</p>
               )}
               {showEval && <p className="mt-3 text-[15px] text-ink-2">Eval here: <span className="num text-ink">{formatEval(a.evals[cur])}</span></p>}
               {missed.length > 0 && (
@@ -286,7 +339,28 @@ function GameReview({ game }: { game: GameRecord }) {
         </div>
 
         {a && userFlags.length > 0 && (
-          <MistakeCoach a={a} pos={pos} plies={userFlags} k={sel} onPick={pickMistake} line={line} onLine={setLine} onPractice={() => setPractice(true)} />
+          <MistakeCoach
+            a={a}
+            pos={pos}
+            plies={userFlags}
+            k={sel}
+            onPick={pickMistake}
+            line={line}
+            onLine={setLine}
+            revealed={outcome[userFlags[sel]]}
+            atMistake={cur === userFlags[sel]}
+            tryMsg={tryMsg}
+            onReveal={() => {
+              resetTry();
+              setCur(userFlags[sel]);
+              setOutcome((o) => ({ ...o, [userFlags[sel]]: 'shown' }));
+            }}
+            onBack={() => {
+              setLine(null);
+              resetTry();
+              setCur(userFlags[sel]);
+            }}
+          />
         )}
 
         <h2 className="mt-2 text-[13px] font-semibold uppercase tracking-wider text-ink-2">Whole game</h2>
@@ -394,169 +468,6 @@ function EvalGraph({ a, cur, onPick, userColor }: { a: GameAnalysis; cur: number
   );
 }
 
-// ---------- blunder practice: "find the better move" ----------
-
-function Practice({
-  game,
-  a,
-  pos,
-  plies,
-  start = 0,
-  onExit,
-}: {
-  game: GameRecord;
-  a: GameAnalysis;
-  pos: Position[];
-  plies: number[];
-  start?: number;
-  onExit: () => void;
-}) {
-  const [k, setK] = useState(start);
-  const [state, setState] = useState<'move' | 'checking' | 'right' | 'wrong' | 'shown'>('move');
-  const [fen, setFen] = useState(pos[plies[start]].fen);
-  const [last, setLast] = useState<[Key, Key]>();
-  const [msg, setMsg] = useState('');
-  const [solved, setSolved] = useState(0);
-  const [, setTick] = useState(0);
-  const i = plies[k];
-  const orientation = game.userColor === 'w' ? 'white' : 'black';
-  const pov = game.userColor === 'w' ? 1 : -1;
-
-  const load = (idx: number) => {
-    setK(idx);
-    setFen(pos[plies[idx]].fen);
-    setState('move');
-    setMsg('');
-    setLast(undefined);
-  };
-
-  const onMove = async (from: Key, to: Key) => {
-    const c = new Chess(pos[i].fen);
-    let mv;
-    try {
-      mv = c.move({ from, to, promotion: isPromotion(c, from, to) ? (a.best[i][4] ?? 'q') : undefined });
-    } catch {
-      return setTick((t) => t + 1);
-    }
-    const uci = mv.from + mv.to + (mv.promotion ?? '');
-    setFen(c.fen());
-    setLast([from, to]);
-    if (uci === pos[i].uci) {
-      setState('wrong');
-      return setMsg('That is the move you played in the game. Find a better one.');
-    }
-    let good = uci === a.best[i] || c.isCheckmate();
-    if (!good) {
-      setState('checking');
-      await getEngine().setStrength({ elo: FULL_STRENGTH });
-      const r = await getEngine().analyze(c.fen(), 12);
-      const after = pov * whitePov(c.fen(), r);
-      const loss = Math.max(-1000, Math.min(1000, pov * a.evals[i])) - Math.max(-1000, Math.min(1000, after));
-      good = loss <= PRACTICE_TOLERANCE;
-    }
-    if (good) {
-      sound.correct();
-      setState('right');
-      setSolved((s) => s + 1);
-      setMsg(uci === a.best[i] ? `${mv.san}! The engine's top choice.` : `${mv.san} works too. Engine's best was ${sanOf(pos[i].fen, a.best[i])}.`);
-    } else {
-      sound.wrong();
-      setState('wrong');
-      setMsg(`${mv.san} isn't better. Try again.`);
-    }
-  };
-
-  const retry = () => {
-    setFen(pos[i].fen);
-    setLast(undefined);
-    setState('move');
-    setMsg('');
-  };
-
-  const show = () => {
-    setFen(pos[i].fen);
-    setLast(undefined);
-    setState('shown');
-    setMsg(`Best was ${sanOf(pos[i].fen, a.best[i])}${a.themes[i] ? ` (${themeLabel(a.themes[i]!)})` : ''}.`);
-  };
-
-  const done = state === 'right' || state === 'shown';
-  const shapes: DrawShape[] = state === 'shown' ? [arrow(a.best[i], 'green')] : [];
-  const moveNo = Math.floor(i / 2) + 1;
-  const flag = a.flags[i];
-
-  return (
-    <div className="mx-auto grid w-full max-w-6xl gap-4 px-4 pb-8 pt-4 md:grid-cols-[minmax(0,1fr)_340px] md:gap-8 md:px-8 md:pt-10">
-      <div className="mx-auto w-full max-w-[min(100%,calc(100dvh-10rem))]">
-        <Board
-          fen={fen}
-          orientation={orientation}
-          turnColor={fen.split(' ')[1] === 'w' ? 'white' : 'black'}
-          movableColor={orientation}
-          dests={state === 'move' ? toDests(new Chess(fen)) : NO_DESTS}
-          lastMove={last}
-          check={new Chess(fen).inCheck()}
-          shapes={shapes}
-          onMove={onMove}
-        />
-      </div>
-      <aside className="flex flex-col gap-4">
-        <div className="glass flex flex-col gap-3 p-5">
-          <div className="flex items-center justify-between text-sm">
-            <button onClick={onExit} className="text-zinc-400 hover:text-white">
-              &larr; Review
-            </button>
-            <span className="text-zinc-500">
-              {k + 1} / {plies.length} &middot; {solved} found
-            </span>
-          </div>
-          <div className="text-base leading-relaxed">
-            Move {moveNo}: you played <span className={flag === 'blunder' ? 'text-down' : 'text-amber-400'}>{pos[i].san}</span>
-            {flag === 'blunder' ? '??' : '?'}
-            {flag === 'blunder' && blunderStep(pos[i + 1].fen, a.best[i + 1]) && (
-              <span className="text-ink-2"> ({CCT_LABEL[blunderStep(pos[i + 1].fen, a.best[i + 1])!]})</span>
-            )}{' '}
-            Find a better move.
-          </div>
-          <AnimatePresence mode="wait">
-            {msg && (
-              <motion.div
-                key={msg}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`text-sm ${state === 'right' ? 'text-emerald-300' : state === 'shown' ? 'text-zinc-300' : 'text-red-300'}`}
-              >
-                {msg}
-              </motion.div>
-            )}
-          </AnimatePresence>
-          {state === 'checking' && <div className="text-sm text-zinc-400">Checking with Stockfish&hellip;</div>}
-          <div className="flex gap-2">
-            {state === 'wrong' && (
-              <>
-                <button onClick={retry} className="btn-ghost flex-1">
-                  Try again
-                </button>
-                <button onClick={show} className="btn-ghost flex-1">
-                  Show best
-                </button>
-              </>
-            )}
-            {done && (
-              <button
-                onClick={() => (k + 1 < plies.length ? load(k + 1) : onExit())}
-                className="btn-primary flex-1"
-              >
-                {k + 1 < plies.length ? 'Next' : 'Done'}
-              </button>
-            )}
-          </div>
-        </div>
-      </aside>
-    </div>
-  );
-}
-
 function sanOf(fen: string, uci: string) {
   try {
     return new Chess(fen).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] }).san;
@@ -596,7 +507,11 @@ function MistakeCoach({
   onPick,
   line,
   onLine,
-  onPractice,
+  revealed,
+  atMistake,
+  tryMsg,
+  onReveal,
+  onBack,
 }: {
   a: GameAnalysis;
   pos: Position[];
@@ -605,7 +520,11 @@ function MistakeCoach({
   onPick: (k: number) => void;
   line: ShownLine | null;
   onLine: (l: ShownLine | null) => void;
-  onPractice: () => void;
+  revealed?: 'found' | 'shown';
+  atMistake: boolean;
+  tryMsg: { text: string; tone: 'bad' | 'good' | 'wait' } | null;
+  onReveal: () => void;
+  onBack: () => void;
 }) {
   const i = plies[k];
   const ended = new Chess(pos[i + 1].fen).isGameOver();
@@ -704,25 +623,36 @@ function MistakeCoach({
               <Line which="punish" l={lines.punish} />
             </section>
           )}
-          <section className="flex flex-col gap-2">
-            <h3 className="text-[13px] font-semibold uppercase tracking-wider text-up">Better was {bestSan}</h3>
-            <p className="text-[17px] leading-relaxed">{lines.bestText}</p>
-            <Line which="best" l={lines.best} />
-          </section>
+          {revealed && (
+            <section className="flex flex-col gap-2">
+              <h3 className="text-[13px] font-semibold uppercase tracking-wider text-up">Better was {bestSan}</h3>
+              <p className="text-[17px] leading-relaxed">{lines.bestText}</p>
+              <Line which="best" l={lines.best} />
+            </section>
+          )}
         </>
       )}
 
-      <div className="flex gap-2">
-        <button
-          className="btn-ghost flex-1"
-          onClick={() => onLine(null)}
-        >
-          Back to the game
-        </button>
-        <button className="btn-primary flex-1" onClick={onPractice}>
-          Try it yourself
-        </button>
-      </div>
+      {revealed === 'found' && tryMsg?.tone === 'good' && <p className="text-[17px] font-semibold text-up">{tryMsg.text}</p>}
+
+      {!revealed && (
+        <section className="flex flex-col gap-3 border-t border-white/10 pt-4">
+          <h3 className="text-[13px] font-semibold uppercase tracking-wider text-accent">Your turn</h3>
+          {atMistake && !line ? (
+            <>
+              <p className="text-[17px] leading-relaxed">Find a better move than {pos[i].san}. Make it on the board.</p>
+              {tryMsg && <p className={`text-[17px] ${tryMsg.tone === 'bad' ? 'text-down' : 'text-ink-2'}`}>{tryMsg.text}</p>}
+            </>
+          ) : (
+            <button className="btn-ghost self-start" onClick={onBack}>
+              Back to this position
+            </button>
+          )}
+          <button className="btn-ghost self-start" onClick={onReveal}>
+            Show me
+          </button>
+        </section>
+      )}
     </div>
   );
 }
