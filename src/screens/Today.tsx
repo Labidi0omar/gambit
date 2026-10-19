@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Chess } from 'chess.js';
 import type { Key } from 'chessground/types';
-import { useDaily, today, dayStreak, dayKey } from '../store/daily';
+import { useDaily, dayStreak } from '../store/daily';
 import { usePuzzles } from '../store/puzzles';
 import { useLessons } from '../store/lessons';
 import { useGames } from '../store/games';
@@ -10,10 +10,11 @@ import { useBot } from '../store/settings';
 import { useNav } from '../store/nav';
 import { useOpenings, dueLines } from '../store/openings';
 import { useUnlocks } from '../lib/useUnlocks';
+import { useTraining } from '../lib/useTraining';
 import { ratingStatus } from '../lib/rating';
 import { LEVELS, type Lesson } from '../lib/lessons';
 import { pickPuzzle, themeLabel, type Puzzle } from '../lib/puzzles';
-import { DAILY_PUZZLE_MS, currentLevel, nextLesson, weakestTheme, estimatedStrength } from '../lib/plan';
+import { currentLevel, estimatedStrength } from '../lib/plan';
 import { Board } from '../components/Board';
 import { Sparkline, Row, RowGroup, PieceArt, Icon, rise } from '../components/ui';
 
@@ -35,7 +36,7 @@ type Preview =
 
 export function Today() {
   const days = useDaily((s) => s.days);
-  const { rating, themeStats, missedThemes, reviews, attempts, recentIds } = usePuzzles();
+  const { rating, reviews, attempts, recentIds } = usePuzzles();
   const completed = useLessons((s) => s.completed);
   const games = useGames((s) => s.games);
   const botElo = useBot((s) => s.botElo);
@@ -45,19 +46,12 @@ export function Today() {
   const hasRepertoire = !!(openings.white || openings.black);
   const openUnlocked = useUnlocks().openings;
 
-  const d = today(days);
+  const { d, theme, lesson, lessonToday, puzzlePct, done, doneCount } = useTraining();
   const streak = dayStreak(days);
   const level = currentLevel(completed, rating);
-  const theme = weakestTheme(level, themeStats, missedThemes);
-  const lesson = nextLesson(completed, rating);
-  const lessonToday = Object.values(completed).some((ts) => dayKey(new Date(ts)) === dayKey());
-  const gameToday = games.some((g) => dayKey(new Date(g.date)) === dayKey());
   const due = Object.values(reviews).filter((c) => c.due <= Date.now()).length;
   const est = estimatedStrength(games, rating);
 
-  const puzzlePct = Math.min(1, d.puzzleMs / DAILY_PUZZLE_MS);
-  const done = [puzzlePct >= 1, lessonToday || !lesson, gameToday];
-  const doneCount = done.filter(Boolean).length;
   const minutes = Math.floor(d.puzzleMs / 60_000);
 
   const rated = attempts.filter((a) => !a.review);

@@ -19,6 +19,7 @@ import { useJourney, firstStepsDone } from './store/journey';
 import { useUnlocks } from './lib/useUnlocks';
 import { howToUnlock, type Feature } from './lib/unlocks';
 import { useGames } from './store/games';
+import { useTraining } from './lib/useTraining';
 
 type NavTab = Exclude<Tab, 'session'>;
 const LABEL: Record<NavTab, string> = { today: 'Today', learn: 'Learn', puzzles: 'Puzzles', openings: 'Openings', play: 'Play', review: 'Games', progress: 'Progress' };
@@ -29,6 +30,7 @@ export default function App() {
   const journey = useJourney();
   const open = useUnlocks();
   const gamesPlayed = useGames((s) => s.games.length);
+  const training = useTraining();
   const pathDone = firstStepsDone(journey);
 
   // Progressive reveal: a tab exists only once its feature is open.
@@ -143,8 +145,8 @@ export default function App() {
                 <Icon name={muted ? 'soundOff' : 'soundOn'} />
               </button>
               {pathDone && showNav && (
-                <button onClick={() => go('today')} className="btn-primary hidden !py-2.5 md:inline-flex">
-                  Today&rsquo;s training
+                <button onClick={training.start} className="btn-primary hidden !py-2.5 md:inline-flex" title="Go to the next unfinished part of today's training">
+                  {training.doneCount < 3 ? `Train: ${training.nextLabel} (${training.doneCount}/3)` : 'Extra puzzles'}
                 </button>
               )}
             </div>
