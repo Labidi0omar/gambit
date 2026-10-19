@@ -113,11 +113,16 @@ export function Today() {
               ? 'Puzzles, lesson and game are done. Anything more today is extra credit.'
               : `Fifteen minutes of puzzles, one lesson, one game. ${doneCount === 0 ? 'Nothing done yet today.' : `${doneCount} of 3 done today.`}`}
           </motion.p>
-          <motion.div {...rise(2)} className="mt-8">
+          <motion.div {...rise(2)} className="mt-8 flex flex-wrap gap-3">
             <button onClick={openPreview} disabled={!preview} className="btn-primary">
               {cta}
               <Icon name="chevron" className="h-4 w-4" strokeWidth={2.5} />
             </button>
+            {cta !== 'Play a game' && (
+              <button onClick={() => go('play')} className="btn-ghost">
+                Play a game
+              </button>
+            )}
           </motion.div>
 
           <motion.div {...rise(3)} className="mt-12">
