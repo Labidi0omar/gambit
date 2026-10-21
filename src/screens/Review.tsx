@@ -321,7 +321,7 @@ function GameReview({ game }: { game: GameRecord }) {
   });
 
   // For a bad move: the better line, and how the other side punishes the move played.
-  const wantLines = !!a && !!cls && BAD.has(cls) && !!a.best[ply];
+  const wantLines = !!a && !!cls && mineBad && !!a.best[ply];
   const [lines, setLines] = useState<{ ply: number; best: LineStep[]; bestText: string; punishText: string } | 'failed' | null>(null);
   useEffect(() => {
     if (!wantLines) return;
@@ -609,7 +609,7 @@ function GameReview({ game }: { game: GameRecord }) {
                   ))}
                 {BAD.has(cls) && !isUserPly(ply) && (
                   <p className="text-[17px] leading-relaxed text-ink-2">
-                    {game.opponent ? 'They' : 'The bot'} slipped. {cls !== 'inaccuracy' && 'Your next move was a chance to punish it. '}Best was {bestSan}.
+                    {game.opponent ? 'They' : 'The bot'} slipped. {cls !== 'inaccuracy' && 'Your next move was a chance to punish it. '}
                   </p>
                 )}
                 {line && (
@@ -638,7 +638,7 @@ function GameReview({ game }: { game: GameRecord }) {
                   Retry
                 </button>
               )}
-              {cls && BAD.has(cls) && !line && (
+              {mineBad && !line && (
                 <button className="btn-ghost" disabled={!L} onClick={showBest}>
                   Show best
                 </button>
