@@ -15,7 +15,8 @@ interface OpeningsState {
   white?: string;
   black?: string;
   cards: Record<string, LineCard>;
-  choose: (side: Side, id: string) => void;
+  /** Pick a repertoire for a side, or undefined to clear it. */
+  choose: (side: Side, id: string | undefined) => void;
   /** Record a drill of one line: perfect moves the card up, any mistake sends it back to tomorrow. */
   grade: (key: string, perfect: boolean) => void;
 }
@@ -44,10 +45,10 @@ export interface DueLine {
   card?: LineCard;
 }
 
-/** Lines of the chosen repertoires that are new or due now. */
-export function dueLines(s: Pick<OpeningsState, 'white' | 'black' | 'cards'>, all = false): DueLine[] {
+/** Lines of the chosen repertoires that are new or due now, optionally for one side only. */
+export function dueLines(s: Pick<OpeningsState, 'white' | 'black' | 'cards'>, all = false, only?: Side): DueLine[] {
   const out: DueLine[] = [];
-  for (const side of ['white', 'black'] as Side[]) {
+  for (const side of only ? [only] : (['white', 'black'] as Side[])) {
     const rep = findRepertoire(side, s[side]);
     if (!rep) continue;
     rep.lines.forEach((_, index) => {

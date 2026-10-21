@@ -24,11 +24,22 @@ export function Openings() {
   const [pos, setPos] = useState(0);
   const [last, setLast] = useState<{ perfect: boolean; mistakes: number } | null>(null);
 
-  const start = (all: boolean) => {
-    const q = dueLines(useOpenings.getState(), all);
-    setQueue(q);
+  const start = (all: boolean, only?: Side) => {
+    const q = dueLines(useOpenings.getState(), all, only);
+    setQueue(q.length ? q : null);
     setPos(0);
     setLast(null);
+  };
+  // Clicking an opening drills it right away (due lines, or all of them if none are due).
+  // Clicking the selected one again clears it.
+  const pick = (side: Side, id: string) => {
+    if ((side === 'white' ? white : black) === id) {
+      choose(side, undefined);
+      if (queue?.[pos]?.side === side) setQueue(null);
+      return;
+    }
+    choose(side, id);
+    start(dueLines(useOpenings.getState(), false, side).length === 0, side);
   };
 
   const current = queue?.[pos];
@@ -54,10 +65,10 @@ export function Openings() {
                 return (
                   <button
                     key={r.id}
-                    onClick={() => choose(side, r.id)}
+                    onClick={() => pick(side, r.id)}
                     disabled={locked}
                     aria-pressed={on}
-                    title={locked ? `Opens at ${ADVANCED_RATING} puzzle rating` : undefined}
+                    title={locked ? `Opens at ${ADVANCED_RATING} puzzle rating` : on ? 'Click again to unselect' : undefined}
                     className={`px-4 py-2.5 text-[15px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${on ? 'bg-ink text-black' : 'bg-surface-2 enabled:hover:bg-surface-3'}`}
                   >
                     {r.name}
@@ -82,44 +93,57 @@ export function Openings() {
             <p className="text-[17px]">Pick an opening for each color to start drilling.</p>
           </div>
         ) : current && rep ? (
-          <Drill
-            key={`${current.key}-${pos}`}
-            line={rep.lines[current.index]}
-            side={current.side}
-            label={`${rep.name}${current.index === 0 ? ', main line' : ''}`}
-            learn={!current.card || current.card.stage < 0}
-            progress={`${pos + 1} of ${queue!.length}`}
-            onDone={(perfect, mistakes) => {
-              grade(current.key, perfect);
-              setLast({ perfect, mistakes });
-            }}
-            next={
-              last
-                ? () => {
-                    setLast(null);
-                    if (pos + 1 < queue!.length) setPos(pos + 1);
-                    else setQueue(null);
-                  }
-                : undefined
-            }
-            result={last}
-          />
+          <div className="flex flex-col gap-3">
+            <button onClick={() => setQueue(null)} className="self-start text-[15px] text-ink-2 hover:text-ink">
+              &larr; Stop drilling
+            </button>
+            <Drill
+              key={`${current.key}-${pos}`}
+              line={rep.lines[current.index]}
+              side={current.side}
+              label={`${rep.name}${current.index === 0 ? ', main line' : ''}`}
+              learn={!current.card || current.card.stage < 0}
+              progress={`${pos + 1} of ${queue!.length}`}
+              onDone={(perfect, mistakes) => {
+                grade(current.key, perfect);
+                setLast({ perfect, mistakes });
+              }}
+              next={
+                last
+                  ? () => {
+                      setLast(null);
+                      if (pos + 1 < queue!.length) setPos(pos + 1);
+                      else setQueue(null);
+                    }
+                  : undefined
+              }
+              result={last}
+            />
+          </div>
         ) : (
           <div className="flex flex-col gap-6">
             <div className="opacity-60">
               <Board fen={START} orientation={white ? 'white' : 'black'} turnColor="white" dests={NO_DESTS} viewOnly />
             </div>
             <p className="display-m">{due.length ? `${due.length} line${due.length === 1 ? '' : 's'} to drill today.` : 'Nothing due today.'}</p>
-            <div className="flex flex-wrap items-center gap-4">
-              {due.length > 0 && (
-                <button onClick={() => start(false)} className="btn-primary">
-                  Drill {due.length} line{due.length === 1 ? '' : 's'}
-                </button>
-              )}
-              <button onClick={() => start(true)} className={due.length ? 'link text-[17px]' : 'btn-ghost'}>
+            <div className="flex flex-wrap items-center gap-3">
+              {(['white', 'black'] as Side[]).map((side) => {
+                const r = findRepertoire(side, side === 'white' ? white : black);
+                if (!r) return null;
+                const n = due.filter((d) => d.side === side).length;
+                return (
+                  <button key={side} onClick={() => start(n === 0, side)} className={n ? 'btn-primary' : 'btn-ghost'}>
+                    {side === 'white' ? 'White' : 'Black'}: {r.name}
+                    {n > 0 && ` (${n} due)`}
+                  </button>
+                );
+              })}
+            </div>
+            {due.length > 0 && (
+              <button onClick={() => start(true)} className="link self-start text-[17px]">
                 Drill every line anyway
               </button>
-            </div>
+            )}
             <p className="text-[15px] text-ink-2">Perfect lines come back after 1, 3, 7 and 14 days. A mistake brings a line back tomorrow.</p>
           </div>
         )}
