@@ -28,24 +28,35 @@ export interface GameRecord {
   startFen: string;
   san: string[];
   analysis?: GameAnalysis;
+  /** Set for games imported from another site; botElo is then the opponent's rating. */
+  opponent?: string;
+  site?: string;
 }
 
 interface GamesState {
   games: GameRecord[];
   addGame: (g: Omit<GameRecord, 'id' | 'date'>) => string;
   setAnalysis: (id: string, a: GameAnalysis) => void;
+  /** Adds imported games not already saved; returns how many were new. */
+  importGames: (gs: GameRecord[]) => number;
 }
 
 const MAX_GAMES = 50;
 
 export const useGames = create<GamesState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       games: [],
       addGame: (g) => {
         const id = Date.now().toString(36);
         set((s) => ({ games: [{ ...g, id, date: Date.now() }, ...s.games].slice(0, MAX_GAMES) }));
         return id;
+      },
+      importGames: (gs) => {
+        const have = new Set(get().games.map((g) => g.id));
+        const fresh = gs.filter((g) => !have.has(g.id));
+        set((s) => ({ games: [...fresh, ...s.games].sort((x, y) => y.date - x.date).slice(0, MAX_GAMES) }));
+        return fresh.length;
       },
       setAnalysis: (id, a) => set((s) => ({ games: s.games.map((g) => (g.id === id ? { ...g, analysis: a } : g)) })),
     }),

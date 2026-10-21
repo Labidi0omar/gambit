@@ -14,6 +14,7 @@ import { usePuzzles } from '../store/puzzles';
 import { useNav } from '../store/nav';
 import { sound } from '../lib/sound';
 import { useUnlocks } from '../lib/useUnlocks';
+import { importGames as fetchGames, type Site } from '../lib/import';
 
 const NO_DESTS = new Map<Key, Key[]>();
 const PRACTICE_TOLERANCE = 50; // a move within half a pawn of best counts as found
@@ -26,22 +27,88 @@ export function Review() {
   return game ? <GameReview key={game.id} game={game} /> : <GameList />;
 }
 
+const vsName = (g: GameRecord) => (g.opponent ? `${g.opponent} (${g.botElo}) on ${g.site}` : `Stockfish ${g.botElo}`);
+
+const IMPORT_KEY = 'gambit.import';
+
+/** Username box that pulls your recent chess.com or Lichess games into the list. */
+function ImportBox() {
+  const importGames = useGames((s) => s.importGames);
+  const saved = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(IMPORT_KEY) ?? 'null') as { site: Site; user: string } | null;
+    } catch {
+      return null;
+    }
+  })();
+  const [site, setSite] = useState<Site>(saved?.site ?? 'chesscom');
+  const [user, setUser] = useState(saved?.user ?? '');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; bad?: boolean } | null>(null);
+  const run = async () => {
+    if (!user.trim() || busy) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      localStorage.setItem(IMPORT_KEY, JSON.stringify({ site, user: user.trim() }));
+    } catch {
+      /* ignore */
+    }
+    try {
+      const gs = await fetchGames(site, user);
+      const n = importGames(gs);
+      setMsg({ text: gs.length ? `${n} new game${n === 1 ? '' : 's'} imported (${gs.length - n} already here).` : 'No games found for that player.' });
+    } catch (e) {
+      setMsg({ text: e instanceof Error && !(e instanceof TypeError) ? e.message : "Couldn't reach the site. Check your connection.", bad: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form
+      className="glass flex flex-col gap-3 p-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        run();
+      }}
+    >
+      <span className="text-[15px] font-semibold">Import your games</span>
+      <div className="flex flex-wrap gap-2">
+        <select value={site} onChange={(e) => setSite(e.target.value as Site)} className="bg-surface-2 px-3 py-2 text-[15px]">
+          <option value="chesscom">chess.com</option>
+          <option value="lichess">Lichess</option>
+        </select>
+        <input
+          value={user}
+          onChange={(e) => setUser(e.target.value)}
+          placeholder="Username"
+          className="min-w-0 flex-1 bg-surface-2 px-3 py-2 text-[15px]"
+        />
+        <button className="btn-primary" disabled={busy || !user.trim()}>
+          {busy ? 'Importing…' : 'Import'}
+        </button>
+      </div>
+      {msg && <p className={`text-[15px] ${msg.bad ? 'text-down' : 'text-ink-2'}`}>{msg.text}</p>}
+    </form>
+  );
+}
+
 function GameList() {
   const games = useGames((s) => s.games);
   const go = useNav((s) => s.go);
-  if (!games.length)
-    return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center text-zinc-400">
-        No games yet.{' '}
-        <button onClick={() => go('play')} className="text-accent hover:underline">
-          Play the bot
-        </button>{' '}
-        and your games show up here for review.
-      </div>
-    );
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-3 px-4 pb-8 pt-4 md:px-8 md:pt-10">
       <h1 className="font-display mb-2 text-3xl font-bold md:text-4xl">Your games</h1>
+      <ImportBox />
+      {!games.length && (
+        <p className="py-8 text-center text-zinc-400">
+          No games yet. Import them above, or{' '}
+          <button onClick={() => go('play')} className="text-accent hover:underline">
+            play the bot
+          </button>
+          .
+        </p>
+      )}
       {games.map((g) => {
         const mine = g.analysis?.flags.filter((f, i) => f && (i % 2 === 0) === (g.userColor === 'w')) ?? [];
         return (
@@ -56,7 +123,7 @@ function GameList() {
               {RESULT_TEXT[g.result]}
             </span>
             <span className="flex-1 text-sm">
-              vs Stockfish {g.botElo} &middot; {g.userColor === 'w' ? 'White' : 'Black'} &middot; {Math.ceil(g.san.length / 2)} moves
+              vs {vsName(g)} &middot; {g.userColor === 'w' ? 'White' : 'Black'} &middot; {Math.ceil(g.san.length / 2)} moves
               <span className="block text-xs text-zinc-500">
                 {new Date(g.date).toLocaleString()} &middot; {g.reason}
               </span>
@@ -262,6 +329,7 @@ function GameReview({ game }: { game: GameRecord }) {
     setLines(null);
     const i = ply;
     const mine = isUserPly(i);
+    const oppName = game.opponent ? 'your opponent' : 'the bot';
     const ended = new Chess(pos[i + 1].fen).isGameOver();
     Promise.all([bestLine(pos[i].fen), ended ? Promise.resolve({ pv: [], mate: null }) : bestLine(pos[i + 1].fen)])
       .then(([b, p]) => {
@@ -270,12 +338,12 @@ function GameReview({ game }: { game: GameRecord }) {
           ply: i,
           best: playLine(pos[i].fen, b.pv),
           bestText: [
-            explainLine(pos[i].fen, b.pv, b.mate, mine ? 'you' : 'the bot'),
+            explainLine(pos[i].fen, b.pv, b.mate, mine ? 'you' : oppName),
             ended || !mine ? '' : compareLines(pos[i].fen, b.pv, [pos[i].uci!, ...p.pv], p.mate !== null && p.mate > 0),
           ]
             .filter(Boolean)
             .join(' '),
-          punishText: p.pv.length ? explainLine(pos[i + 1].fen, p.pv, p.mate, mine ? 'the bot' : 'you') : '',
+          punishText: p.pv.length ? explainLine(pos[i + 1].fen, p.pv, p.mate, mine ? oppName : 'you') : '',
         });
       })
       .catch(() => live && setLines('failed'));
@@ -411,7 +479,7 @@ function GameReview({ game }: { game: GameRecord }) {
           <button onClick={() => (started ? toSummary() : go('review'))} className="text-sm text-zinc-400 hover:text-white">
             &larr; {started ? 'Summary' : 'Games'}
           </button>
-          <span className="text-xs text-zinc-500">vs Stockfish {game.botElo}</span>
+          <span className="text-xs text-zinc-500">vs {vsName(game)}</span>
         </div>
 
         {!a && failed ? (
@@ -451,7 +519,7 @@ function GameReview({ game }: { game: GameRecord }) {
             <div className="grid grid-cols-[1fr_4rem_4rem] items-center gap-y-2 text-[15px]">
               <span />
               <span className="text-center text-[13px] font-semibold text-ink-2">You</span>
-              <span className="text-center text-[13px] font-semibold text-ink-2">Bot</span>
+              <span className="text-center text-[13px] font-semibold text-ink-2">{game.opponent ? 'Them' : 'Bot'}</span>
               {showNums && (
                 <>
                   <span className="text-ink-2">Accuracy</span>
@@ -511,7 +579,7 @@ function GameReview({ game }: { game: GameRecord }) {
                 <div className="flex items-center gap-3">
                   <Badge cls={cls} />
                   <p className="font-display text-xl font-semibold leading-tight">
-                    {isUserPly(ply) ? '' : 'Bot: '}
+                    {isUserPly(ply) ? '' : `${game.opponent ? 'Them' : 'Bot'}: `}
                     {moveNo(ply)} {pos[ply].san} <span style={{ color: CLS[cls].color }}>{CLS[cls].says}</span>
                   </p>
                 </div>
@@ -541,7 +609,7 @@ function GameReview({ game }: { game: GameRecord }) {
                   ))}
                 {BAD.has(cls) && !isUserPly(ply) && (
                   <p className="text-[17px] leading-relaxed text-ink-2">
-                    The bot slipped. {cls !== 'inaccuracy' && 'Your next move was a chance to punish it. '}Best was {bestSan}.
+                    {game.opponent ? 'They' : 'The bot'} slipped. {cls !== 'inaccuracy' && 'Your next move was a chance to punish it. '}Best was {bestSan}.
                   </p>
                 )}
                 {line && (
